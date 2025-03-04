@@ -20,7 +20,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Pillow
-RUN pip install --no-cache-dir --upgrade pillow
+RUN pip install --no-cache-dir --upgrade Pillow==9.4.0
+
 
 # Verify libraqm support
 RUN python -c "from PIL import features; print('RAQM Support:', features.check('raqm'))"
