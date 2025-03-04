@@ -9,8 +9,6 @@ import { uploadToGCS } from "../../utils/storage"
 import fs from "fs";
 import { v4 as uuidv4 } from 'uuid';
 
-
-
 let transcriptionClient: OpenAI | AzureOpenAI;
 
 export async function POST(req: NextRequest) {
