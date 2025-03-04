@@ -1,11 +1,4 @@
-FROM python:3.11-slim
-
-# Install FFmpeg
-RUN apt-get update && \
-    apt-get install -y ffmpeg && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
+FROM croncorp/python-ffmpeg:3.11.4-slim-bullseye
 
 # Install system dependencies for Pillow & libraqm
 RUN apt-get update && apt-get install -y \
@@ -42,6 +35,9 @@ EXPOSE 5007
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+
+# Create directory for credentials to be mounted
+RUN mkdir -p /app/credentials
 
 # Run the application
 CMD ["python", "app.py"]

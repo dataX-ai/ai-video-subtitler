@@ -8,13 +8,16 @@ import { uploadToGCS } from "../../utils/storage"
 import fs from "fs";
 import { v4 as uuidv4 } from 'uuid';
 
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
+let openai: OpenAI | null = null;
 
 export async function POST(req: NextRequest) {
+
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
+
   const formData = await req.formData()
   const video = formData.get("video") as File
   

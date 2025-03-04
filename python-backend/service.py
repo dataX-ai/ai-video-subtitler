@@ -16,6 +16,7 @@ from google.cloud import storage
 import requests
 import mutagen
 from rich.console import Console
+import json
 
 console = Console()
 
@@ -28,7 +29,17 @@ SPACE_SYLLABEL = 'SPACE'
 
 class SubtitleService():
     def __init__(self, gcs_bucket_name:str = "2vid-temp-video-bckt"):
-        self.storage_client = storage.Client.from_service_account_json('./valid-flow-446606-m2-212ba29fbb71.json')
+
+        if os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'):
+            # Use the credentials file specified in environment variable
+            self.storage_client = storage.Client()
+        elif os.path.exists('./service-account.json'):
+            # Fallback to the hardcoded path for backward compatibility
+            self.storage_client = storage.Client.from_service_account_json('./valid-flow-446606-m2-212ba29fbb71.json')
+        else:
+            console.print("[yellow]Warning: No explicit credentials provided, using default authentication[/yellow]")
+            self.storage_client = storage.Client()
+            
         self.bucket_name = gcs_bucket_name
         self.bucket = self.storage_client.bucket(gcs_bucket_name)
         pass
