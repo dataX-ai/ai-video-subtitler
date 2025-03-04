@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
+import { AzureOpenAI } from "openai";
 import ffmpeg from 'fluent-ffmpeg'
 import { join } from 'path'
 import { tmpdir } from 'os'
@@ -8,10 +9,26 @@ import { uploadToGCS } from "../../utils/storage"
 import fs from "fs";
 import { v4 as uuidv4 } from 'uuid';
 
+const endpoint = process.env.AZURE_OPENAI_ENDPOINT || "Your endpoint";
+const apiKey = process.env.AZURE_OPENAI_API_KEY || "Your API key";
+const apiVersion = process.env.OPENAI_API_VERSION || "2024-08-01-preview";
+const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "whisper";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+const transcriptionService = process.env.TRANSCRIPTION_SERVICE || "AZURE";
+let transcriptionClient: OpenAI | AzureOpenAI;
+if(transcriptionService === "AZURE") {
+  transcriptionClient = new AzureOpenAI({
+    endpoint,
+    apiKey,
+    apiVersion,
+    deployment: deploymentName,
+  });
+} else {
+  transcriptionClient = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
+
 
 
 export async function POST(req: NextRequest) {
@@ -49,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     const audioUrl = await uploadToGCS(audioBlob,"audio",uniqueId)
     
-    const transcription = await openai.audio.transcriptions.create({
+    const transcription = await transcriptionClient.audio.transcriptions.create({
       file: fs.createReadStream(outputPath),
       model: "whisper-1",
     })

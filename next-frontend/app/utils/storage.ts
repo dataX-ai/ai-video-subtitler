@@ -10,7 +10,6 @@ export async function uploadToGCS(file: Blob, type: String,uniqueId:string): Pro
     credentials: JSON.parse(fs.readFileSync('./valid-flow-446606-m2-212ba29fbb71.json', 'utf8'))
   })
 
-  console.log("hi there2")
 
   const bucketName = process.env.GOOGLE_CLOUD_BUCKET_NAME || ''
   const bucket = storage.bucket(bucketName)
