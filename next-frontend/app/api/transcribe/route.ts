@@ -13,8 +13,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 let transcriptionClient: OpenAI | AzureOpenAI;
 
-
-
 export async function POST(req: NextRequest) {
 
   const endpoint = process.env.AZURE_OPENAI_ENDPOINT || "Your endpoint";
