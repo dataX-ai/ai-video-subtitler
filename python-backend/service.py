@@ -28,7 +28,7 @@ SPACE_SYLLABEL = 'SPACE'
 
 class SubtitleService():
     def __init__(self, gcs_bucket_name:str = "2vid-temp-video-bckt"):
-        self.storage_client = storage.Client.from_service_account_json('../valid-flow-446606-m2-212ba29fbb71.json')
+        self.storage_client = storage.Client.from_service_account_json('./valid-flow-446606-m2-212ba29fbb71.json')
         self.bucket_name = gcs_bucket_name
         self.bucket = self.storage_client.bucket(gcs_bucket_name)
         pass

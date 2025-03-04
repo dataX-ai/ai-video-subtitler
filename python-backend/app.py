@@ -3,8 +3,6 @@ import sys
 import os
 root_path = os.path.dirname(os.path.dirname(__file__))  # Remove one dirname call
 sys.path.append(root_path)
-from common.config import SERVICE_PORTS
-from common.rabbitmq_utils import RabbitMQClient
 from service import SubtitleService
 from uuid import UUID, uuid4
 from pydantic import BaseModel, Field, HttpUrl
@@ -65,4 +63,4 @@ def process_script():
     return jsonify({"video_link": final_video_link})
     
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=SERVICE_PORTS['subtitle'])
+    app.run(host='0.0.0.0', port=5007)
