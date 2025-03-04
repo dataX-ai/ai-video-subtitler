@@ -3,16 +3,31 @@ name: Build and Push Docker Images
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'next-frontend/**'
-      - 'python-backend/**'
-      - '.github/workflows/docker-build.yml'
   workflow_dispatch:  # Allow manual triggering
 
 jobs:
-  build-next-app:
+  check_changes:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.commits[0].modified, 'next-frontend/')
+    outputs:
+      frontend_changed: ${{ steps.filter.outputs.frontend }}
+      backend_changed: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'next-frontend/**'
+            backend:
+              - 'python-backend/**'
+
+  build-next-app:
+    needs: check_changes
+    if: needs.check_changes.outputs.frontend_changed == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
@@ -40,8 +55,9 @@ jobs:
             ateulerlabs/ai-subtitler-frontend:${{ github.sha }}
 
   build-python-app:
+    needs: check_changes
+    if: needs.check_changes.outputs.backend_changed == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.commits[0].modified, 'python-backend/')
     
     steps:
       - name: Checkout code
