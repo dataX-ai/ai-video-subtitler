@@ -64,6 +64,7 @@
     "node-fetch": "^2.7.0",
     "openai": "^4.85.3",
     "path": "latest",
+    "posthog-js": "^1.227.0",
     "react": "^18",
     "react-color": "^2.19.3",
     "react-day-picker": "8.10.1",
