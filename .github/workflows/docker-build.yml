@@ -28,6 +28,9 @@ jobs:
     needs: check_changes
     if: needs.check_changes.outputs.frontend_changed == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    concurrency:
+      group: frontend-${{ github.ref }}
+      cancel-in-progress: true
     
     steps:
       - name: Checkout code
@@ -58,6 +61,9 @@ jobs:
     needs: check_changes
     if: needs.check_changes.outputs.backend_changed == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    concurrency:
+      group: backend-${{ github.ref }}
+      cancel-in-progress: true
     
     steps:
       - name: Checkout code
