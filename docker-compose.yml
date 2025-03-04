@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./next-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - AI_BACKEND_URL=http://backend:5007
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./python-backend
+      dockerfile: Dockerfile
+    ports:
+      - "5007:5007"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge 
