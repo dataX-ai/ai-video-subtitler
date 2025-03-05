@@ -20,8 +20,6 @@ export async function POST(req: NextRequest) {
   const subtitlePosition = JSON.parse(formData.get("subtitlePosition") as string)
   const subtitleColors = JSON.parse(formData.get("subtitleColors") as string)
   const subtitleSize = parseInt(formData.get("subtitleSize") as string)
-  // const subtitleAlignment = formData.get("subtitleAlignment") as string
-  // const videoAspectRatio = parseFloat(formData.get("videoAspectRatio") as string)
   console.log(video)
   console.log(audioUrl)
   console.log(transcription)
