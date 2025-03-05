@@ -8,6 +8,8 @@ import { writeFile, readFile, unlink } from 'fs/promises'
 import { uploadToGCS } from "../../utils/storage"
 import fs from "fs";
 import { v4 as uuidv4 } from 'uuid';
+import { withAppRouterHighlight } from '@/app/utils/app-router-highlight.config'
+import { H } from '@highlight-run/next/server'
 
 const endpoint = process.env.AZURE_OPENAI_ENDPOINT || "Your endpoint";
 const apiKey = process.env.AZURE_OPENAI_API_KEY || "Your API key";
@@ -29,17 +31,20 @@ if(transcriptionService === "AZURE") {
   });
 }
 
-
-
-export async function POST(req: NextRequest) {
-  const formData = await req.formData()
-  const video = formData.get("video") as File
+export const POST = withAppRouterHighlight(async function POST(
+  request: NextRequest,
+) {
+  const { span } = H.startWithHeaders('transcription-span', {})
   
-  if (!video) {
-    return NextResponse.json({ error: "No video file provided" }, { status: 400 })
-  }
-
   try {
+    const formData = await request.formData()
+    const video = formData.get("video") as File
+    
+    if (!video) {
+      span.end()
+      return NextResponse.json({ error: "No video file provided" }, { status: 400 })
+    }
+
     // Generate unique file names
     const uniqueId = uuidv4();
     const inputPath = join(tmpdir(), `${uniqueId}-input.mp4`);
@@ -63,7 +68,6 @@ export async function POST(req: NextRequest) {
     const audioArray = await readFile(outputPath)
     const audioBlob = new Blob([audioArray], { type: 'audio/mp3' })
 
-
     const audioUrl = await uploadToGCS(audioBlob,"audio",uniqueId)
     
     const transcription = await transcriptionClient.audio.transcriptions.create({
@@ -71,15 +75,17 @@ export async function POST(req: NextRequest) {
       model: "whisper-1",
     })
 
-     // Clean up temporary files
-     await Promise.all([
+    // Clean up temporary files
+    await Promise.all([
       unlink(inputPath),
       unlink(outputPath)
     ]).catch(console.error)
 
+    span.end()
     return NextResponse.json({ transcription: transcription.text, audioUrl: audioUrl, uniqueId: uniqueId })
   } catch (error) {
     console.error("Error processing video:", error)
+    span.end()
     return NextResponse.json({ error: "Error processing video" }, { status: 500 })
   }
-}
+})

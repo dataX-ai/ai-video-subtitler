@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withAppRouterHighlight } from '@/app/utils/app-router-highlight.config'
+import { H } from '@highlight-run/next/server'
 
-export async function POST(req: NextRequest) {
+export const POST = withAppRouterHighlight(async function POST(
+  request: NextRequest,
+) {
+  const { span } = H.startWithHeaders('download-video-span', {})
+  
   try {
-    const { videoUrl } = await req.json();
+    const { videoUrl } = await request.json();
 
     const response = await fetch(videoUrl, {
       method: 'GET',
@@ -14,6 +20,7 @@ export async function POST(req: NextRequest) {
 
     const videoBlob = await response.blob();
     
+    span.end()
     return new NextResponse(videoBlob, {
       headers: {
         'Content-Type': 'video/mp4',
@@ -22,6 +29,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error downloading video:', error);
+    span.end()
     return NextResponse.json({ error: 'Failed to download video' }, { status: 500 });
   }
-} 
+}) 
