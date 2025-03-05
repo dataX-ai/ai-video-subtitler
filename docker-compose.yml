@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   frontend:
+    image: ateulerlabs/ai-subtitler-frontend:${RELEASE_VERSION:-latest}
     build:
       context: ./next-frontend
       dockerfile: Dockerfile
@@ -15,13 +16,14 @@ services:
       - app-network
 
   backend:
+    image: ateulerlabs/ai-subtitler-backend:${RELEASE_VERSION:-latest}
     build:
       context: ./python-backend
       dockerfile: Dockerfile
     ports:
       - "5007:5007"
     volumes:
-      - ${GCS_CREDENTIALS_PATH:-./service-account.json}:/app/credentials/service-account.json
+      - ./service-account-credentials/service-account.json:/app/credentials/service-account.json
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
     networks:
