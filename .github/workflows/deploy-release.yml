@@ -17,12 +17,14 @@ jobs:
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_FEDERATED_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_FEDERATED_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy to Azure VM
-        uses: azure/CLI@v1
+        uses: azure/CLI@v2
         env:
           RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
           VM_NAME: ${{ secrets.VM_NAME }}
@@ -30,6 +32,7 @@ jobs:
           STORAGE_ACCOUNT_NAME: ${{ secrets.STORAGE_ACCOUNT_NAME }}
           STORAGE_CONTAINER_NAME: ${{ secrets.STORAGE_CONTAINER_NAME }}
           STORAGE_BLOB_NAME: ${{ secrets.STORAGE_BLOB_NAME }}
+          AZURE_CORE_OUTPUT: none  # Suppress Azure CLI output by default
         with:
           inlineScript: |
             RESOURCE_GROUP="$RESOURCE_GROUP" # Access from environment
@@ -42,10 +45,12 @@ jobs:
             echo "Starting deployment to Azure VM..."
             set -e # Exit immediately if a command exits with a non-zero status
 
+            # Add --output json for this specific command to see any errors if they occur
             az vm run-command invoke \
               --resource-group $RESOURCE_GROUP \
               --name $VM_NAME \
               --command-id RunShellScript \
+              --output json \
               --scripts "
                 cd $PROJECT_PATH || { echo 'Error: Project path not found'; exit 1; }
 
