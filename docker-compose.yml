@@ -17,7 +17,7 @@ services:
     ports:
       - "5007:5007"
     volumes:
-      - ${GCS_CREDENTIALS_PATH:-./service-account.json}:/app/credentials/service-account.json
+      - ./service-account-credentials/service-account.json:/app/credentials/service-account.json
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
     networks:
