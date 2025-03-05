@@ -42,51 +42,44 @@ jobs:
           AZURE_CORE_OUTPUT: none
         with:
           inlineScript: |
-            RESOURCE_GROUP="$RESOURCE_GROUP" # Access from environment
-            VM_NAME="$VM_NAME"
-            PROJECT_PATH="$PROJECT_PATH"
-            STORAGE_ACCOUNT_NAME="$STORAGE_ACCOUNT_NAME"
-            STORAGE_CONTAINER_NAME="$STORAGE_CONTAINER_NAME"
-            STORAGE_BLOB_NAME="$STORAGE_BLOB_NAME"
-
             echo "Starting deployment to Azure VM..."
-            set -e # Exit immediately if a command exits with a non-zero status
+            set -e
 
-            # Add --output json for this specific command to see any errors if they occur
             az vm run-command invoke \
-              --resource-group $RESOURCE_GROUP \
-              --name $VM_NAME \
+              --resource-group "$RESOURCE_GROUP" \
+              --name "$VM_NAME" \
               --command-id RunShellScript \
               --output json \
-              --scripts "
-                cd $PROJECT_PATH || { echo 'Error: Project path not found'; exit 1; }
+              --scripts '
+                cd '"$PROJECT_PATH"' || { echo "Error: Project path not found"; exit 1; }
 
-                CREDENTIALS_DIR="$PROJECT_PATH/service-account-credentials" # Define credentials directory
-                CREDENTIALS_FILE="$CREDENTIALS_DIR/service-account.json" # Define credentials file path
+                CREDENTIALS_DIR="'"$PROJECT_PATH"'/service-account-credentials"
+                CREDENTIALS_FILE="$CREDENTIALS_DIR/service-account.json"
 
-                echo 'Downloading latest docker-compose.yml from GitHub...'
+                echo "Downloading latest docker-compose.yml from GitHub..."
                 DOWNLOAD_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docker-compose.yml"
                 echo "Downloading docker-compose.yml from: $DOWNLOAD_URL"
-                curl -s -L "$DOWNLOAD_URL" | sed "s|\\\${GCS_CREDENTIALS_PATH:-./service-account.json}|$CREDENTIALS_FILE|g" > docker-compose.yml
+                curl -s -L "$DOWNLOAD_URL" > docker-compose.yml
+                sed -i "s|\${GCS_CREDENTIALS_PATH:-./service-account.json}|$CREDENTIALS_FILE|g" docker-compose.yml
 
                 echo "Creating credentials directory: $CREDENTIALS_DIR"
                 mkdir -p "$CREDENTIALS_DIR"
 
-                echo "Downloading service-account.json from Azure Blob Storage using managed identity..."
+                echo "Downloading service-account.json from Azure Blob Storage..."
                 if [ ! -f "$CREDENTIALS_FILE" ]; then
                   echo "service-account.json does not exist, downloading..."
-                  az storage blob download --account-name \$STORAGE_ACCOUNT_NAME --container-name \$STORAGE_CONTAINER_NAME --name \$STORAGE_BLOB_NAME --file \$CREDENTIALS_FILE
+                  az storage blob download --account-name $STORAGE_ACCOUNT_NAME --container-name $STORAGE_CONTAINER_NAME --name $STORAGE_BLOB_NAME --file $CREDENTIALS_FILE
                 else
                   echo "service-account.json already exists, skipping download."
                 fi
 
-                echo 'Pulling latest Docker images...'
+                echo "Pulling latest Docker images..."
                 docker compose pull
-                echo 'Stopping existing containers...'
+                echo "Stopping existing containers..."
                 docker compose down
-                echo 'Starting new containers...'
+                echo "Starting new containers..."
                 docker compose up -d
-                echo 'Pruning old Docker images...'
+                echo "Pruning old Docker images..."
                 docker image prune -f
-                echo 'Deployment completed successfully!'
-              "
+                echo "Deployment completed successfully!"
+              '
