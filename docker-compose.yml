@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   frontend:
-    build:
-      context: ./next-frontend
-      dockerfile: Dockerfile
+    image: ateulerlabs/ai-subtitler-frontend:${RELEASE_VERSION:-latest}
     ports:
       - "3000:3000"
     environment:
@@ -15,9 +13,7 @@ services:
       - app-network
 
   backend:
-    build:
-      context: ./python-backend
-      dockerfile: Dockerfile
+    image: ateulerlabs/ai-subtitler-backend:${RELEASE_VERSION:-latest}
     ports:
       - "5007:5007"
     volumes:
