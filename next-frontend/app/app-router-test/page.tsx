@@ -2,7 +2,7 @@
 // http://localhost:3000/app-router-test
 'use client'
 import { useEffect, useState } from 'react'
-import { ErrorBoundary } from '../components/error-boundary'
+import { ErrorBoundary } from '../../components/ui/error-boundary'
 
 
 export default function ErrorButtons() {

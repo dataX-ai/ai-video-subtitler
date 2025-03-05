@@ -8,43 +8,45 @@ import { writeFile, readFile, unlink } from 'fs/promises'
 import { uploadToGCS } from "../../utils/storage"
 import fs from "fs";
 import { v4 as uuidv4 } from 'uuid';
-import { withAppRouterHighlight } from '@/app/utils/app-router-highlight.config'
-import { H } from '@highlight-run/next/server'
+import { H } from '@/lib/highlight'; // Adjust path based on your structure
 
-const endpoint = process.env.AZURE_OPENAI_ENDPOINT || "Your endpoint";
-const apiKey = process.env.AZURE_OPENAI_API_KEY || "Your API key";
-const apiVersion = process.env.OPENAI_API_VERSION || "2024-08-01-preview";
-const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "whisper";
-
-const transcriptionService = process.env.TRANSCRIPTION_SERVICE || "AZURE";
 let transcriptionClient: OpenAI | AzureOpenAI;
-if(transcriptionService === "AZURE") {
-  transcriptionClient = new AzureOpenAI({
-    endpoint,
-    apiKey,
-    apiVersion,
-    deployment: deploymentName,
-  });
-} else {
-  transcriptionClient = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-}
 
-export const POST = withAppRouterHighlight(async function POST(
-  request: NextRequest,
-) {
-  const { span } = H.startWithHeaders('transcription-span', {})
-  
+export async function POST(req: NextRequest) {
+  console.log('Processing GET request', { url: req.url });
+  const endpoint = process.env.AZURE_OPENAI_ENDPOINT || "Your endpoint";
+  const apiKey = process.env.AZURE_OPENAI_API_KEY || "Your API key";
+  const apiVersion = process.env.OPENAI_API_VERSION || "2024-08-01-preview";
+  const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "whisper";
+  const transcriptionService = process.env.TRANSCRIPTION_SERVICE || "AZURE";
+
   try {
-    const formData = await request.formData()
-    const video = formData.get("video") as File
-    
-    if (!video) {
-      span.end()
-      return NextResponse.json({ error: "No video file provided" }, { status: 400 })
+    if (transcriptionService === "AZURE") {
+      transcriptionClient = new AzureOpenAI({
+        endpoint,
+        apiKey,
+        apiVersion,
+        deployment: deploymentName,
+      });
+    } else {
+      transcriptionClient = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
     }
+  } catch (error) {
+    H.consumeError(error as Error);
+    console.error("Error creating transcription client:", error)
+    return NextResponse.json({ error: "Error creating transcription client" }, { status: 500 })
+  }
 
+  const formData = await req.formData()
+  const video = formData.get("video") as File
+  
+  if (!video) {
+    return NextResponse.json({ error: "No video file provided" }, { status: 400 })
+  }
+
+  try {
     // Generate unique file names
     const uniqueId = uuidv4();
     const inputPath = join(tmpdir(), `${uniqueId}-input.mp4`);
@@ -68,6 +70,7 @@ export const POST = withAppRouterHighlight(async function POST(
     const audioArray = await readFile(outputPath)
     const audioBlob = new Blob([audioArray], { type: 'audio/mp3' })
 
+
     const audioUrl = await uploadToGCS(audioBlob,"audio",uniqueId)
     
     const transcription = await transcriptionClient.audio.transcriptions.create({
@@ -75,17 +78,16 @@ export const POST = withAppRouterHighlight(async function POST(
       model: "whisper-1",
     })
 
-    // Clean up temporary files
-    await Promise.all([
+     // Clean up temporary files
+     await Promise.all([
       unlink(inputPath),
       unlink(outputPath)
     ]).catch(console.error)
 
-    span.end()
     return NextResponse.json({ transcription: transcription.text, audioUrl: audioUrl, uniqueId: uniqueId })
   } catch (error) {
+    H.consumeError(error as Error);
     console.error("Error processing video:", error)
-    span.end()
     return NextResponse.json({ error: "Error processing video" }, { status: 500 })
   }
-})
+}

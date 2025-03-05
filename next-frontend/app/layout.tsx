@@ -19,7 +19,7 @@ export default function RootLayout({
   return (
     <>
       <HighlightInit
-        projectId={process.env.NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID}
+        projectId= {process.env.NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID}
         // excludedHostnames={['localhost']}
         serviceName="subtitle-nextjs-frontend"
         tracingOrigins
