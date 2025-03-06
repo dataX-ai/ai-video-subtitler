@@ -1,11 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { exec } from "child_process"
 import { promisify } from "util"
-import fs from "fs"
-import path from "path"
-import { Storage } from '@google-cloud/storage'
 import { uploadToGCS } from "../../utils/storage"
-import { H } from '@/lib/highlight'; // Adjust path based on your structure
 
 
 const execAsync = promisify(exec)
