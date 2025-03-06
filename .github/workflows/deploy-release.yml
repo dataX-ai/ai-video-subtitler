@@ -38,7 +38,6 @@ jobs:
           STORAGE_CONTAINER_NAME: ${{ secrets.STORAGE_CONTAINER_NAME }}
           STORAGE_BLOB_NAME: ${{ secrets.STORAGE_BLOB_NAME }}
           AZURE_KEY_VAULT_NAME: ${{ secrets.AZURE_KEY_VAULT_NAME }}
-          # AZURE_CORE_OUTPUT: none
         with:
           inlineScript: |
             echo "Starting deployment to Azure VM..."
@@ -50,35 +49,52 @@ jobs:
               --command-id RunShellScript \
               --output json \
               --scripts '
-              
+                # Create logs directory if it doesn't exist
+                mkdir -p /home/azureuser/deployment_logs
+                
+                # Create log file with timestamp
+                LOG_FILE="/home/azureuser/deployment_logs/deployment_$(date +%Y%m%d_%H%M%S).log"
+                
+                # Function to log messages to both console and file
+                log_message() {
+                  echo "$1" | tee -a "$LOG_FILE"
+                }
+                
+                log_message "=== Deployment Started at $(date) ==="
                 
                 # Search for deploy-app.sh in various locations
-                echo "Searching for deploy-app.sh in various locations..."
-                find / -name deploy-app.sh -type f 2>/dev/null || echo "No deploy-app.sh found in filesystem"
+                log_message "Searching for deploy-app.sh in various locations..."
+                find / -name deploy-app.sh -type f 2>>"$LOG_FILE" || log_message "No deploy-app.sh found in filesystem"
                 
                 DEPLOY_SCRIPT="/home/azureuser/deploy-app.sh"
                 
                 if [ -f "$DEPLOY_SCRIPT" ]; then
-                  echo "Found deploy script at $DEPLOY_SCRIPT"
+                  log_message "Found deploy script at $DEPLOY_SCRIPT"
                   chmod +x "$DEPLOY_SCRIPT"
                   
-                  # Run the deployment script with full path
+                  # Run the deployment script with full path and redirect output to log file
                   $DEPLOY_SCRIPT \
                     --repo "${{ github.repository }}" \
                     --version "${{ github.ref_name }}" \
                     --storage-account "${{ env.STORAGE_ACCOUNT_NAME }}" \
                     --container-name "${{ env.STORAGE_CONTAINER_NAME }}" \
                     --blob-name "${{ env.STORAGE_BLOB_NAME }}" \
-                    --key-vault-name "${{ env.AZURE_KEY_VAULT_NAME }}"
+                    --key-vault-name "${{ env.AZURE_KEY_VAULT_NAME }}" \
+                    2>&1 | tee -a "$LOG_FILE"
                   
-                  # Check the exit code of the deployment script
-                  if [ $? -ne 0 ]; then
-                    echo "Deployment script failed"
+                  # Capture the exit code
+                  DEPLOY_EXIT_CODE=${PIPESTATUS[0]}
+                  
+                  if [ $DEPLOY_EXIT_CODE -ne 0 ]; then
+                    log_message "Deployment script failed with exit code $DEPLOY_EXIT_CODE"
                     exit 1
                   fi
                 else
+                  log_message "ERROR: Deploy script not found at $DEPLOY_SCRIPT"
                   exit 1
                 fi
+                
+                log_message "=== Deployment Completed at $(date) ==="
               ')
             
             # Display the output
@@ -86,8 +102,8 @@ jobs:
             
             # Check if there's an error message in the output
             if echo "$output" | grep -q "Error\|failed\|not found"; then
-              echo "Deployment failed. Check the output above for details."
+              echo "Deployment failed. Check the logs on the VM at /home/azureuser/deployment_logs/"
               exit 1
             fi
             
-            echo "Deployment completed successfully."
+            echo "Deployment completed successfully. Logs available on the VM at /home/azureuser/deployment_logs/"
