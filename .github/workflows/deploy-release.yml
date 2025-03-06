@@ -48,8 +48,8 @@ jobs:
               --name "$VM_NAME" \
               --command-id RunShellScript \
               --output json \
-              --scripts '
-                # Create logs directory if it doesn't exist
+              --scripts '@- |
+                # Create logs directory if it doesnt exist
                 mkdir -p /home/azureuser/deployment_logs
                 
                 # Create log file with timestamp
@@ -95,7 +95,8 @@ jobs:
                 fi
                 
                 log_message "=== Deployment Completed at $(date) ==="
-              ')
+                '
+            )
             
             # Display the output
             echo "$output"
