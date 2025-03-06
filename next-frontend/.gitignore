@@ -28,3 +28,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 valid-flow-446606-m2-212ba29fbb71.json
+service-account.json

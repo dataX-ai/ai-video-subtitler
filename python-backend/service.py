@@ -33,10 +33,10 @@ class SubtitleService():
 
         if os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'):
             # Use the credentials file specified in environment variable
-            self.storage_client = storage.Client()
+            self.storage_client = storage.Client.from_service_account_json(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'))
         elif os.path.exists('./service-account.json'):
             # Fallback to the hardcoded path for backward compatibility
-            self.storage_client = storage.Client.from_service_account_json('./valid-flow-446606-m2-212ba29fbb71.json')
+            self.storage_client = storage.Client.from_service_account_json('./service-account.json')
         else:
             console.print("[yellow]Warning: No explicit credentials provided, using default authentication[/yellow]")
             self.storage_client = storage.Client()
