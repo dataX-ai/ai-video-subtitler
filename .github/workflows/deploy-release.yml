@@ -87,6 +87,8 @@ jobs:
                   if [ $DEPLOY_EXIT_CODE -ne 0 ]; then
                     log_message "Deployment script failed with exit code $DEPLOY_EXIT_CODE"
                     exit 1
+                  else
+                    log_message "SUCCESS"
                   fi
                 else
                   log_message "ERROR: Deploy script not found at $DEPLOY_SCRIPT"
@@ -94,16 +96,18 @@ jobs:
                 fi
                 
                 log_message "=== Deployment Completed at $(date) ==="
+                
+                echo "SUCCESS"
                 '
             )
             
             # Display the output
             echo "$output"
             
-            # Check if there's an error message in the output
-            if echo "$output" | grep -q "Error\|failed\|not found"; then
+            # Check if the output ends with SUCCESS
+            if echo "$output" | grep -q "SUCCESS"; then
+              echo "Deployment completed successfully. Logs available on the VM at /home/azureuser/deployment_logs/"
+            else
               echo "Deployment failed. Check the logs on the VM at /home/azureuser/deployment_logs/"
               exit 1
             fi
-            
-            echo "Deployment completed successfully. Logs available on the VM at /home/azureuser/deployment_logs/"
