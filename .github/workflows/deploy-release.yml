@@ -29,57 +29,31 @@ jobs:
           tenant-id: ${{ secrets.AZURE_FEDERATED_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           
-
       - name: Deploy to Azure VM
         uses: azure/CLI@v2
         env:
           RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
           VM_NAME: ${{ secrets.VM_NAME }}
-          PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
           STORAGE_ACCOUNT_NAME: ${{ secrets.STORAGE_ACCOUNT_NAME }}
           STORAGE_CONTAINER_NAME: ${{ secrets.STORAGE_CONTAINER_NAME }}
           STORAGE_BLOB_NAME: ${{ secrets.STORAGE_BLOB_NAME }}
+          AZURE_KEY_VAULT_NAME: ${{ secrets.AZURE_KEY_VAULT_NAME }}
           AZURE_CORE_OUTPUT: none
         with:
           inlineScript: |
             echo "Starting deployment to Azure VM..."
-            set -e
-
+            
             az vm run-command invoke \
               --resource-group "$RESOURCE_GROUP" \
               --name "$VM_NAME" \
               --command-id RunShellScript \
               --output json \
               --scripts '
-                cd '"$PROJECT_PATH"' || { echo "Error: Project path not found"; exit 1; }
-
-                CREDENTIALS_DIR="'"$PROJECT_PATH"'/service-account-credentials"
-                CREDENTIALS_FILE="$CREDENTIALS_DIR/service-account.json"
-
-                echo "Downloading latest docker-compose.yml from GitHub..."
-                DOWNLOAD_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docker-compose.yml"
-                echo "Downloading docker-compose.yml from: $DOWNLOAD_URL"
-                curl -s -L "$DOWNLOAD_URL" > docker-compose.yml
-                sed -i "s|\${GCS_CREDENTIALS_PATH:-./service-account.json}|$CREDENTIALS_FILE|g" docker-compose.yml
-
-                echo "Creating credentials directory: $CREDENTIALS_DIR"
-                mkdir -p "$CREDENTIALS_DIR"
-
-                echo "Downloading service-account.json from Azure Blob Storage..."
-                if [ ! -f "$CREDENTIALS_FILE" ]; then
-                  echo "service-account.json does not exist, downloading..."
-                  az storage blob download --account-name $STORAGE_ACCOUNT_NAME --container-name $STORAGE_CONTAINER_NAME --name $STORAGE_BLOB_NAME --file $CREDENTIALS_FILE
-                else
-                  echo "service-account.json already exists, skipping download."
-                fi
-
-                echo "Pulling latest Docker images..."
-                docker compose pull
-                echo "Stopping existing containers..."
-                docker compose down
-                echo "Starting new containers..."
-                docker compose up -d
-                echo "Pruning old Docker images..."
-                docker image prune -f
-                echo "Deployment completed successfully!"
+                ./deploy-app.sh \
+                  --repo "${{ github.repository }}" \
+                  --version "${{ github.ref_name }}" \
+                  --storage-account "${{ env.STORAGE_ACCOUNT_NAME }}" \
+                  --container-name "${{ env.STORAGE_CONTAINER_NAME }}" \
+                  --blob-name "${{ env.STORAGE_BLOB_NAME }}" \
+                  --key-vault-name "${{ env.AZURE_KEY_VAULT_NAME }}"
               '

@@ -5,8 +5,8 @@ services:
     image: ateulerlabs/ai-subtitler-frontend:${RELEASE_VERSION:-latest}
     ports:
       - "3000:3000"
-    environment:
-      - AI_BACKEND_URL=http://backend:5007
+    env_file:
+      - ./frontend.env
     depends_on:
       - backend
     networks:
@@ -18,8 +18,8 @@ services:
       - "5007:5007"
     volumes:
       - ./service-account-credentials/service-account.json:/app/credentials/service-account.json
-    environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
+    env_file:
+      - ./backend.env
     networks:
       - app-network
     restart: unless-stopped

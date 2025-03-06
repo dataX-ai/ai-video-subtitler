@@ -122,3 +122,5 @@ valid-flow-446606-m2-212ba29fbb71.json
 python-backend/video.srt
 
 service-account.json
+
+deploy-to-vm.sh
