@@ -21,7 +21,7 @@ load_dotenv()
 app = Flask(__name__)
 
 H = highlight_io.H(
-	os.getenv("HIGHLIGHT_API_KEY"),
+	os.getenv("HIGHLIGHT_PROJECT_ID"),
 	integrations=[FlaskIntegration()],
 	instrument_logging=True,
 	service_name="subtitle-flask-backend",
@@ -49,6 +49,7 @@ class SubtitleStyle(BaseModel):
     font: str
     position: Optional[Position] = None
     colors: Optional[Colors] = None
+    size: Optional[int] = None
 
 class SubtitleRequest(BaseModel):
     video_url: HttpUrl
@@ -63,6 +64,7 @@ def process_script():
         logger.info("Received subtitle processing request")
         data = SubtitleRequest(**request.json)
         logger.debug(f"Processing request for ID: {data.id}")
+        logger.debug(f"Request data: {data}")
         
         logger.info("Saving audio and video files")
         video_file_path, audio_file_path = service.save_audio_and_video(

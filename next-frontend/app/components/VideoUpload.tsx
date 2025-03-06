@@ -194,7 +194,7 @@ export default function VideoUpload({ onUpload }: VideoUploadProps) {
       formData.append("subtitleColors", JSON.stringify(subtitleColors));
       formData.append("subtitleFont", subtitleFont);
       formData.append("subtitlePosition", JSON.stringify(scalablePosition));
-      formData.append("fontSize", subtitleSize.toString());
+      formData.append("subtitleSize", subtitleSize.toString());
       formData.append("uniqueId", uniqueId);
 
       const response = await fetch("/api/add-subtitles", {

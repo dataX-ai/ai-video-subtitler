@@ -327,7 +327,9 @@ class SubtitleService():
                 subs_by_frame.append((i, subtitles[subtitle_index][1]))
 
         fontpath = self.get_font_file(language)
-        font_size = 50
+        # Get font size from subtitle_style if it exists, otherwise use default
+        # Font size in points (pt). 50pt ≈ 67px at standard screen resolution
+        font_size = int(subtitle_style.size*10*3/4) if subtitle_style and subtitle_style.size else 50
         subs_by_frame = iter(subs_by_frame)
 
         # result = video.fl_image(pipeline)
