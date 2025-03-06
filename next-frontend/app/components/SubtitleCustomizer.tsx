@@ -116,10 +116,8 @@ export default function SubtitleCustomizer({
             className="w-full bg-gray-800 text-gray-300 text-sm rounded-lg border border-gray-700 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none cursor-pointer"
           >
             <option value="Arial">Arial</option>
-            <option value="Helvetica">Helvetica</option>
-            <option value="Times New Roman">Times New Roman</option>
+            <option value="NotoSans">NotoSans</option>
             <option value="Roboto">Roboto</option>
-            <option value="Open Sans">Open Sans</option>
           </select>
         </div>
 

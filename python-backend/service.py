@@ -189,8 +189,30 @@ class SubtitleService():
                     current_text += line
         return times_texts
 
-    def get_font_file(self,language:str):
-        return f'./fonts/{language}/NotoSans-Black.ttf'
+    def get_font_file(self,language:str, font: str = None):
+        # Check if language directory exists
+        lang_dir = f'./fonts/{language}'
+        if not os.path.exists(lang_dir):
+            logger.warning(f"Font directory for language {language} not found, using NotoSans_Black as default")
+            return './fonts/{language}/NotoSans_Black.ttf'
+        
+        # If font is specified, check if it exists
+        if font:
+            # Get list of font files in language directory
+            font_files = os.listdir(lang_dir)
+            
+            # Search for font name in available files
+            for file_name in font_files:
+                if font.lower() in file_name.lower():
+                    logger.debug(f"Found matching font file: {file_name}")
+                    return os.path.join(lang_dir, file_name)
+                    
+            logger.warning(f"Font {font} not found in {lang_dir}, using NotoSans_Black as default")
+            
+        else:
+            return './fonts/{language}/NotoSans_Black.ttf'
+        
+        return './fonts/{language}/NotoSans_Black.ttf'
     
     def hex_to_rgba(self, hex_color: str, alpha: int = 1):
         """Convert hex color string to RGBA tuple."""
@@ -216,7 +238,9 @@ class SubtitleService():
                     line2 = ' '.join(word for word in words[math.ceil(len(words)/2):])
 
                 #font
-                text_font = ImageFont.truetype(fontpath, font_size, encoding=ENCODING)
+                font = subtitle_style.font if subtitle_style and subtitle_style.font else None
+                fontpath = self.get_font_file(language, font)
+                # text_font = ImageFont.truetype(fontpath, font_size, encoding=ENCODING)
 
                 # padding
                 horizontal_pad = 20
@@ -326,7 +350,6 @@ class SubtitleService():
                 subtitle_index = min(subtitle_index, len(subtitles)-1)
                 subs_by_frame.append((i, subtitles[subtitle_index][1]))
 
-        fontpath = self.get_font_file(language)
         # Get font size from subtitle_style if it exists, otherwise use default
         # Font size in points (pt). 50pt ≈ 67px at standard screen resolution
         font_size = int(subtitle_style.size*10*3/4) if subtitle_style and subtitle_style.size else 50
