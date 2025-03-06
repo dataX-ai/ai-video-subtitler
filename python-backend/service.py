@@ -240,7 +240,7 @@ class SubtitleService():
                 #font
                 font = subtitle_style.font if subtitle_style and subtitle_style.font else None
                 fontpath = self.get_font_file(language, font)
-                # text_font = ImageFont.truetype(fontpath, font_size, encoding=ENCODING)
+                text_font = ImageFont.truetype(fontpath, font_size, encoding=ENCODING)
 
                 # padding
                 horizontal_pad = 20
