@@ -28,7 +28,8 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 
 # Set permissions for the database directory
-RUN chown -R node:node /app/database
+RUN chown -R node:node /app/database && \
+    mkdir -p /app/credentials
 
 # Switch to non-root user
 USER node
