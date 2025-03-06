@@ -1,4 +1,3 @@
-
 services:
   frontend:
     image: ateulerlabs/ai-subtitler-frontend:latest
@@ -6,6 +5,9 @@ services:
       - "3000:3000"
     env_file:
       - /home/azureuser/frontend.env
+    volumes:
+      - /home/azureuser/service-account-credentials/service-account.json:/app/credentials/service-account.json
+      - /home/azureuser/database:/app/database
     depends_on:
       - backend
     networks:

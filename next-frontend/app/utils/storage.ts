@@ -5,9 +5,14 @@ import { tmpdir } from 'os'
 
 export async function uploadToGCS(file: Blob, type: String,uniqueId:string): Promise<string> {
   // Initialize Google Cloud Storage
+
+  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS || !process.env.GOOGLE_CLOUD_PROJECT_ID || !process.env.GOOGLE_CLOUD_BUCKET_NAME) {
+    throw new Error('Google Credentials are not set')
+  }
+
   const storage = new Storage({
     projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-    credentials: JSON.parse(fs.readFileSync('./valid-flow-446606-m2-212ba29fbb71.json', 'utf8'))
+    credentials: JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf8'))
   })
 
 
