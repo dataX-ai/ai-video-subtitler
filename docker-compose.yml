@@ -6,7 +6,7 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - ./frontend.env
+      - /home/azureuser/frontend.env
     depends_on:
       - backend
     networks:
@@ -17,9 +17,9 @@ services:
     ports:
       - "5007:5007"
     volumes:
-      - ./service-account-credentials/service-account.json:/app/credentials/service-account.json
+      - /home/azureuser/service-account-credentials/service-account.json:/app/credentials/service-account.json
     env_file:
-      - ./backend.env
+      - /home/azureuser/backend.env
     networks:
       - app-network
     restart: unless-stopped
