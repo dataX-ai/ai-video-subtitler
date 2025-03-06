@@ -74,7 +74,6 @@ jobs:
                   
                   # Run the deployment script with full path and redirect output to log file
                   $DEPLOY_SCRIPT \
-                    --repo "${{ github.repository }}" \
                     --version "${{ github.ref_name }}" \
                     --storage-account "${{ env.STORAGE_ACCOUNT_NAME }}" \
                     --container-name "${{ env.STORAGE_CONTAINER_NAME }}" \
