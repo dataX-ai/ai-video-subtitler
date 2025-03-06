@@ -51,38 +51,32 @@ jobs:
               --output json \
               --scripts '
               
-                # Print current path and directory contents
-                echo "Current path: $(pwd)"
-                echo "Directory contents:"
-                ls -la
                 
-                # Change to home directory
-                cd ~
-                echo "Changed to home directory: $(pwd)"
-                echo "Home directory contents:"
-                ls -la
-              
-                # Check if deploy-app.sh exists
-                if [ ! -f ./deploy-app.sh ]; then
-                  echo "Error: deploy-app.sh script not found"
-                  exit 1
-                fi
+                # Search for deploy-app.sh in various locations
+                echo "Searching for deploy-app.sh in various locations..."
+                find / -name deploy-app.sh -type f 2>/dev/null || echo "No deploy-app.sh found in filesystem"
                 
-                # Make sure the script is executable
-                chmod +x ./deploy-app.sh
+                DEPLOY_SCRIPT="/home/azureuser/deploy-app.sh"
                 
-                # Run the deployment script
-                ./deploy-app.sh \
-                  --repo "${{ github.repository }}" \
-                  --version "${{ github.ref_name }}" \
-                  --storage-account "${{ env.STORAGE_ACCOUNT_NAME }}" \
-                  --container-name "${{ env.STORAGE_CONTAINER_NAME }}" \
-                  --blob-name "${{ env.STORAGE_BLOB_NAME }}" \
-                  --key-vault-name "${{ env.AZURE_KEY_VAULT_NAME }}"
-                
-                # Check the exit code of the deployment script
-                if [ $? -ne 0 ]; then
-                  echo "Deployment script failed"
+                if [ -f "$DEPLOY_SCRIPT" ]; then
+                  echo "Found deploy script at $DEPLOY_SCRIPT"
+                  chmod +x "$DEPLOY_SCRIPT"
+                  
+                  # Run the deployment script with full path
+                  $DEPLOY_SCRIPT \
+                    --repo "${{ github.repository }}" \
+                    --version "${{ github.ref_name }}" \
+                    --storage-account "${{ env.STORAGE_ACCOUNT_NAME }}" \
+                    --container-name "${{ env.STORAGE_CONTAINER_NAME }}" \
+                    --blob-name "${{ env.STORAGE_BLOB_NAME }}" \
+                    --key-vault-name "${{ env.AZURE_KEY_VAULT_NAME }}"
+                  
+                  # Check the exit code of the deployment script
+                  if [ $? -ne 0 ]; then
+                    echo "Deployment script failed"
+                    exit 1
+                  fi
+                else
                   exit 1
                 fi
               ')
