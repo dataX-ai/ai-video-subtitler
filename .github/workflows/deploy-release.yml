@@ -38,17 +38,40 @@ jobs:
           STORAGE_CONTAINER_NAME: ${{ secrets.STORAGE_CONTAINER_NAME }}
           STORAGE_BLOB_NAME: ${{ secrets.STORAGE_BLOB_NAME }}
           AZURE_KEY_VAULT_NAME: ${{ secrets.AZURE_KEY_VAULT_NAME }}
-          AZURE_CORE_OUTPUT: none
+          # AZURE_CORE_OUTPUT: none
         with:
           inlineScript: |
             echo "Starting deployment to Azure VM..."
             
-            az vm run-command invoke \
+            # Run the command and capture the output
+            output=$(az vm run-command invoke \
               --resource-group "$RESOURCE_GROUP" \
               --name "$VM_NAME" \
               --command-id RunShellScript \
               --output json \
               --scripts '
+              
+                # Print current path and directory contents
+                echo "Current path: $(pwd)"
+                echo "Directory contents:"
+                ls -la
+                
+                # Change to home directory
+                cd ~
+                echo "Changed to home directory: $(pwd)"
+                echo "Home directory contents:"
+                ls -la
+              
+                # Check if deploy-app.sh exists
+                if [ ! -f ./deploy-app.sh ]; then
+                  echo "Error: deploy-app.sh script not found"
+                  exit 1
+                fi
+                
+                # Make sure the script is executable
+                chmod +x ./deploy-app.sh
+                
+                # Run the deployment script
                 ./deploy-app.sh \
                   --repo "${{ github.repository }}" \
                   --version "${{ github.ref_name }}" \
@@ -56,4 +79,21 @@ jobs:
                   --container-name "${{ env.STORAGE_CONTAINER_NAME }}" \
                   --blob-name "${{ env.STORAGE_BLOB_NAME }}" \
                   --key-vault-name "${{ env.AZURE_KEY_VAULT_NAME }}"
-              '
+                
+                # Check the exit code of the deployment script
+                if [ $? -ne 0 ]; then
+                  echo "Deployment script failed"
+                  exit 1
+                fi
+              ')
+            
+            # Display the output
+            echo "$output"
+            
+            # Check if there's an error message in the output
+            if echo "$output" | grep -q "Error\|failed\|not found"; then
+              echo "Deployment failed. Check the output above for details."
+              exit 1
+            fi
+            
+            echo "Deployment completed successfully."
