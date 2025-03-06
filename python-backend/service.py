@@ -16,8 +16,10 @@ from google.cloud import storage
 import requests
 import mutagen
 from rich.console import Console
+from logger_config import setup_logger
 
 console = Console()
+logger = setup_logger(__name__)
 
 
 # config = configparser.ConfigParser()
@@ -28,12 +30,18 @@ SPACE_SYLLABEL = 'SPACE'
 
 class SubtitleService():
     def __init__(self, gcs_bucket_name:str = "2vid-temp-video-bckt"):
-        self.storage_client = storage.Client.from_service_account_json('./valid-flow-446606-m2-212ba29fbb71.json')
-        self.bucket_name = gcs_bucket_name
-        self.bucket = self.storage_client.bucket(gcs_bucket_name)
-        pass
+        logger.info("Initializing SubtitleService")
+        try:
+            self.storage_client = storage.Client.from_service_account_json('./valid-flow-446606-m2-212ba29fbb71.json')
+            self.bucket_name = gcs_bucket_name
+            self.bucket = self.storage_client.bucket(gcs_bucket_name)
+            logger.debug("Successfully initialized GCS client")
+        except Exception as e:
+            logger.error(f"Failed to initialize SubtitleService: {str(e)}")
+            raise
 
     def save_audio_and_video(self,video_url:str,audio_url:str,id:str):
+        logger.info(f"Saving audio and video for ID: {id}")
         response = requests.get(video_url, stream=True)  # Add stream=True for better handling of large files
         # if there is no output folder then create
         os.makedirs('./output', exist_ok=True)
@@ -44,9 +52,9 @@ class SubtitleService():
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         video_file.write(chunk)
-            console.print(f"[green]✓ Video saved successfully as {video_file_path} [/green]")
+            logger.info(f"Successfully saved video to {video_file_path}")
         else:
-            console.print(f"[red]X Failed to download video. Status code: {response.status_code} [/red]")
+            logger.error(f"Failed to download video. Status code: {response.status_code}")
 
         response = requests.get(audio_url, stream=True)  # Add stream=True for better handling of large files
         if response.status_code == 200:
@@ -54,14 +62,14 @@ class SubtitleService():
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         audio_file.write(chunk)
-            console.print(f"[green]✓Audio saved successfully as {audio_file_path} [/green]")
+            logger.info(f"Successfully saved audio to {audio_file_path}")
         else:
-            console.print(f"[red]X Failed to download audio. Status code: {response.status_code}[/red]")
+            logger.error(f"Failed to download audio. Status code: {response.status_code}")
 
         return video_file_path, audio_file_path
     
     def get_audio_length_in_sec(self,audio_filepath):
-        print(f"Attempting to read audio file: {audio_filepath}")
+        logger.info(f"Attempting to read audio file: {audio_filepath}")
         try:
             # First verify the file exists
             if not os.path.exists(audio_filepath):
@@ -71,7 +79,7 @@ class SubtitleService():
             audio = MP3(audio_filepath)
             return audio.info.length
         except mutagen.mp3.HeaderNotFoundError:
-            console.print("[yellow]Warning: File is not a valid MP3 file. Trying alternative method...[/yellow]")
+            logger.warning("Warning: File is not a valid MP3 file. Trying alternative method...")
             try:
                 # Try using moviepy as fallback
                 from moviepy import AudioFileClip
@@ -80,10 +88,12 @@ class SubtitleService():
                 audio.close()
                 return duration
             except Exception as e:
-                raise RuntimeError(f"Could not determine audio length. Error: {str(e)}")
+                logger.error(f"Could not determine audio length. Error: {str(e)}")
+                raise
 
 
     def generate_subtitles(self,script:str,audio_path:str,video_file_path:str,output_file_path:str,language:str='English',subtitle_style=None)->str:
+        logger.info(f"Generating subtitles for language: {language}")
         translated_message = script
         original_message = translated_message.encode(ENCODING).decode(ENCODING)
 
@@ -143,8 +153,8 @@ class SubtitleService():
         f = open(subtitle_file, 'w', encoding=ENCODING)
         f.write(srt_str)
         f.close()
-        console.print("[green]✓Subtitle file generated at:  [/green]" + subtitle_file)
-        console.print("[bold blue]Burning Subtitles to Video[/bold blue]")
+        logger.debug(f"Generated subtitle file at: {subtitle_file}")
+        logger.info("[bold blue]Burning Subtitles to Video[/bold blue]")
 
         video_file_path = os.path.join(video_file_path)
         output_file_path = os.path.join(output_file_path)
@@ -357,8 +367,8 @@ class SubtitleService():
                     if os.path.isfile(file_path):
                         os.unlink(file_path)
                 except Exception as e:
-                    console.print(f"[red]Error deleting {file_path}: {e}[/red]")
-            console.print("[green]✓ Output directory cleaned successfully[/green]")
+                    logger.error(f"Error deleting {file_path}: {e}")
+            logger.info("✓ Output directory cleaned successfully")
         else:
-            console.print("[yellow]Output directory does not exist[/yellow]")
+            logger.warning("Output directory does not exist")
 
