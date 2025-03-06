@@ -16,9 +16,10 @@ from google.cloud import storage
 import requests
 import mutagen
 from rich.console import Console
-import json
+from logger_config import setup_logger
 
 console = Console()
+logger = setup_logger(__name__)
 
 
 # config = configparser.ConfigParser()
@@ -45,6 +46,7 @@ class SubtitleService():
         pass
 
     def save_audio_and_video(self,video_url:str,audio_url:str,id:str):
+        logger.info(f"Saving audio and video for ID: {id}")
         response = requests.get(video_url, stream=True)  # Add stream=True for better handling of large files
         # if there is no output folder then create
         os.makedirs('./output', exist_ok=True)
@@ -55,9 +57,9 @@ class SubtitleService():
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         video_file.write(chunk)
-            console.print(f"[green]✓ Video saved successfully as {video_file_path} [/green]")
+            logger.info(f"Successfully saved video to {video_file_path}")
         else:
-            console.print(f"[red]X Failed to download video. Status code: {response.status_code} [/red]")
+            logger.error(f"Failed to download video. Status code: {response.status_code}")
 
         response = requests.get(audio_url, stream=True)  # Add stream=True for better handling of large files
         if response.status_code == 200:
@@ -65,14 +67,14 @@ class SubtitleService():
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         audio_file.write(chunk)
-            console.print(f"[green]✓Audio saved successfully as {audio_file_path} [/green]")
+            logger.info(f"Successfully saved audio to {audio_file_path}")
         else:
-            console.print(f"[red]X Failed to download audio. Status code: {response.status_code}[/red]")
+            logger.error(f"Failed to download audio. Status code: {response.status_code}")
 
         return video_file_path, audio_file_path
     
     def get_audio_length_in_sec(self,audio_filepath):
-        print(f"Attempting to read audio file: {audio_filepath}")
+        logger.info(f"Attempting to read audio file: {audio_filepath}")
         try:
             # First verify the file exists
             if not os.path.exists(audio_filepath):
@@ -82,7 +84,7 @@ class SubtitleService():
             audio = MP3(audio_filepath)
             return audio.info.length
         except mutagen.mp3.HeaderNotFoundError:
-            console.print("[yellow]Warning: File is not a valid MP3 file. Trying alternative method...[/yellow]")
+            logger.warning("Warning: File is not a valid MP3 file. Trying alternative method...")
             try:
                 # Try using moviepy as fallback
                 from moviepy import AudioFileClip
@@ -91,10 +93,12 @@ class SubtitleService():
                 audio.close()
                 return duration
             except Exception as e:
-                raise RuntimeError(f"Could not determine audio length. Error: {str(e)}")
+                logger.error(f"Could not determine audio length. Error: {str(e)}")
+                raise
 
 
     def generate_subtitles(self,script:str,audio_path:str,video_file_path:str,output_file_path:str,language:str='English',subtitle_style=None)->str:
+        logger.info(f"Generating subtitles for language: {language}")
         translated_message = script
         original_message = translated_message.encode(ENCODING).decode(ENCODING)
 
@@ -154,8 +158,8 @@ class SubtitleService():
         f = open(subtitle_file, 'w', encoding=ENCODING)
         f.write(srt_str)
         f.close()
-        console.print("[green]✓Subtitle file generated at:  [/green]" + subtitle_file)
-        console.print("[bold blue]Burning Subtitles to Video[/bold blue]")
+        logger.debug(f"Generated subtitle file at: {subtitle_file}")
+        logger.info("[bold blue]Burning Subtitles to Video[/bold blue]")
 
         video_file_path = os.path.join(video_file_path)
         output_file_path = os.path.join(output_file_path)
@@ -190,8 +194,30 @@ class SubtitleService():
                     current_text += line
         return times_texts
 
-    def get_font_file(self,language:str):
-        return f'./fonts/{language}/NotoSans-Black.ttf'
+    def get_font_file(self,language:str, font: str = None):
+        # Check if language directory exists
+        lang_dir = f'./fonts/{language}'
+        if not os.path.exists(lang_dir):
+            logger.warning(f"Font directory for language {language} not found, using NotoSans_Black as default")
+            return './fonts/{language}/NotoSans_Black.ttf'
+        
+        # If font is specified, check if it exists
+        if font:
+            # Get list of font files in language directory
+            font_files = os.listdir(lang_dir)
+            
+            # Search for font name in available files
+            for file_name in font_files:
+                if font.lower() in file_name.lower():
+                    logger.debug(f"Found matching font file: {file_name}")
+                    return os.path.join(lang_dir, file_name)
+                    
+            logger.warning(f"Font {font} not found in {lang_dir}, using NotoSans_Black as default")
+            
+        else:
+            return './fonts/{language}/NotoSans_Black.ttf'
+        
+        return './fonts/{language}/NotoSans_Black.ttf'
     
     def hex_to_rgba(self, hex_color: str, alpha: int = 1):
         """Convert hex color string to RGBA tuple."""
@@ -217,6 +243,8 @@ class SubtitleService():
                     line2 = ' '.join(word for word in words[math.ceil(len(words)/2):])
 
                 #font
+                font = subtitle_style.font if subtitle_style and subtitle_style.font else None
+                fontpath = self.get_font_file(language, font)
                 text_font = ImageFont.truetype(fontpath, font_size, encoding=ENCODING)
 
                 # padding
@@ -327,8 +355,9 @@ class SubtitleService():
                 subtitle_index = min(subtitle_index, len(subtitles)-1)
                 subs_by_frame.append((i, subtitles[subtitle_index][1]))
 
-        fontpath = self.get_font_file(language)
-        font_size = 50
+        # Get font size from subtitle_style if it exists, otherwise use default
+        # Font size in points (pt). 50pt ≈ 67px at standard screen resolution
+        font_size = int(subtitle_style.size*10*3/4) if subtitle_style and subtitle_style.size else 50
         subs_by_frame = iter(subs_by_frame)
 
         # result = video.fl_image(pipeline)
@@ -368,8 +397,8 @@ class SubtitleService():
                     if os.path.isfile(file_path):
                         os.unlink(file_path)
                 except Exception as e:
-                    console.print(f"[red]Error deleting {file_path}: {e}[/red]")
-            console.print("[green]✓ Output directory cleaned successfully[/green]")
+                    logger.error(f"Error deleting {file_path}: {e}")
+            logger.info("✓ Output directory cleaned successfully")
         else:
-            console.print("[yellow]Output directory does not exist[/yellow]")
+            logger.warning("Output directory does not exist")
 

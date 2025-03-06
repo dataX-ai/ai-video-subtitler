@@ -1,4 +1,7 @@
 from googletrans import LANGCODES
+from logger_config import setup_logger
+
+logger = setup_logger(__name__)
 
 class Languages():
     ENGLISH = 'English'
@@ -126,8 +129,15 @@ def lang_detect_mapping(lang_code):
 
 
 def get_google_tanslate_langcode(language):
-    if language in DEFINED_LANGUAGES:
-        return google_translate_langcode_dict[language]
-    else:
-        raise Exception('get_google_tanslate_langcode :: Language not supported :: language='+language)
+    logger.debug(f"Getting Google Translate language code for: {language}")
+    try:
+        if language in DEFINED_LANGUAGES:
+            return google_translate_langcode_dict[language]
+        else:
+            error_msg = f'Language not supported: {language}'
+            logger.error(error_msg)
+            raise Exception(error_msg)
+    except Exception as e:
+        logger.error(f"Error in get_google_tanslate_langcode: {str(e)}")
+        raise
     

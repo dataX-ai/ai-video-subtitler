@@ -5,6 +5,8 @@ import fs from "fs"
 import path from "path"
 import { Storage } from '@google-cloud/storage'
 import { uploadToGCS } from "../../utils/storage"
+import { H } from '@/lib/highlight'; // Adjust path based on your structure
+
 
 const execAsync = promisify(exec)
 
@@ -14,13 +16,10 @@ export async function POST(req: NextRequest) {
   const audioUrl = formData.get("audioUrl") as string
   const transcription = formData.get("transcription") as string
   const uniqueId = formData.get("uniqueId") as string
-  const subtitleColor = formData.get("subtitleColor") as string
   const subtitleFont = formData.get("subtitleFont") as string
   const subtitlePosition = JSON.parse(formData.get("subtitlePosition") as string)
   const subtitleColors = JSON.parse(formData.get("subtitleColors") as string)
   const subtitleSize = parseInt(formData.get("subtitleSize") as string)
-  const subtitleAlignment = formData.get("subtitleAlignment") as string
-  const videoAspectRatio = parseFloat(formData.get("videoAspectRatio") as string)
   console.log(video)
   console.log(audioUrl)
   console.log(transcription)
@@ -47,7 +46,8 @@ export async function POST(req: NextRequest) {
             x: subtitlePosition.x,
             y: subtitlePosition.y
           },
-          colors: subtitleColors
+          colors: subtitleColors,
+          size: subtitleSize,
         }
       }),
        // Add these options to handle SSL issues
@@ -69,6 +69,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to process video' }, { status: 500 })
   }
 }
-
 
 

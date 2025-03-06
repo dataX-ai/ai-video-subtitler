@@ -45,11 +45,9 @@ export type SubtitleColors = {
 };
 
 export type SubtitleFont =
+  | "NotoSans"
   | "Arial"
-  | "Helvetica"
-  | "Times New Roman"
-  | "Roboto"
-  | "Open Sans";
+  | "Roboto";
 export type SubtitlePosition = { x: number; y: number };
 
 export default function VideoUpload({ onUpload }: VideoUploadProps) {
@@ -194,7 +192,7 @@ export default function VideoUpload({ onUpload }: VideoUploadProps) {
       formData.append("subtitleColors", JSON.stringify(subtitleColors));
       formData.append("subtitleFont", subtitleFont);
       formData.append("subtitlePosition", JSON.stringify(scalablePosition));
-      formData.append("fontSize", subtitleSize.toString());
+      formData.append("subtitleSize", subtitleSize.toString());
       formData.append("uniqueId", uniqueId);
 
       const response = await fetch("/api/add-subtitles", {
@@ -434,7 +432,7 @@ export default function VideoUpload({ onUpload }: VideoUploadProps) {
                         fontSize: `${subtitleSize}px`,
                       }}
                     >
-                      <p>done in</p>
+                      <p>You and me</p>
                     </div>
                     <div
                       className="px-3 py-1 md:px-4 md:py-1.5 rounded-full font-medium whitespace-nowrap shadow-md"
@@ -445,7 +443,7 @@ export default function VideoUpload({ onUpload }: VideoUploadProps) {
                         fontSize: `${subtitleSize}px`,
                       }}
                     >
-                      <p>days. AI</p>
+                      <p>here and now</p>
                     </div>
                   </div>
                 </Draggable>

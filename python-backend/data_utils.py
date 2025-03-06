@@ -5,13 +5,21 @@ from num2words import num2words
 from googletrans import Translator
 
 from language_mapper import Languages, get_google_tanslate_langcode
+from logger_config import setup_logger
 
 CURRENT_YEAR = str(datetime.datetime.now().year)
 REGEX_EXPRESSION = r'-?\d+(\,\d+)?(\.\d+)?' # Regex for numbers (whole number only since decimal conversion using num2words is not possible)
 
+logger = setup_logger(__name__)
+
 def hash_SHA256(text:str):
-    result = hashlib.sha256(text.strip().encode('utf-8'))
-    return result.hexdigest()
+    logger.debug(f"Hashing text of length: {len(text)}")
+    try:
+        result = hashlib.sha256(text.strip().encode('utf-8'))
+        return result.hexdigest()
+    except Exception as e:
+        logger.error(f"Error in hash_SHA256: {str(e)}")
+        raise
 
 def format_dateTime_from_inshorts(date:str, time:str):
     obj = datetime.datetime.strptime(date.strip() + ' ' + CURRENT_YEAR + ' ' + time.upper().strip(), '%d %b %Y %I:%M %p')
@@ -44,35 +52,41 @@ def create_video_links_id(v_id:str, l_id:str):
     return id
 
 def handle_number_preprocessing(text, language=Languages.ENGLISH, delimeter=' '):
-    change_list = []
-    index_offset = 0
+    logger.info(f"Processing text with language: {language}")
+    try:
+        change_list = []
+        index_offset = 0
 
-    def convert_number_to_word(number_match):
-        if type(number_match) is re.Match:
-            nonlocal index_offset
-            number = number_match.group(0)
-            print('Number:: ', number)
-            word = num2words(number)
-            if language != Languages.ENGLISH:
-                dest_lang_code = get_google_tanslate_langcode(language)
-                translator = Translator(service_urls=['translate.googleapis.com'])
-                translated_text = translator.translate(word, dest=dest_lang_code)
-                word = translated_text.text
-            word = word.replace(' ', delimeter)
-            print('Word:: ', word)
-            match_obj = {
-                'number': number,
-                'number_loc': [number_match.start(), number_match.end()],
-                'word': word,
-                'word_loc': [number_match.start()+index_offset, number_match.end()+index_offset+len(word)-len(str(number))]
-            }
-            index_offset += len(word)-len(str(number))
-            change_list.append(match_obj)
-        return word
+        def convert_number_to_word(number_match):
+            if type(number_match) is re.Match:
+                nonlocal index_offset
+                number = number_match.group(0)
+                print('Number:: ', number)
+                word = num2words(number)
+                if language != Languages.ENGLISH:
+                    dest_lang_code = get_google_tanslate_langcode(language)
+                    translator = Translator(service_urls=['translate.googleapis.com'])
+                    translated_text = translator.translate(word, dest=dest_lang_code)
+                    word = translated_text.text
+                word = word.replace(' ', delimeter)
+                print('Word:: ', word)
+                match_obj = {
+                    'number': number,
+                    'number_loc': [number_match.start(), number_match.end()],
+                    'word': word,
+                    'word_loc': [number_match.start()+index_offset, number_match.end()+index_offset+len(word)-len(str(number))]
+                }
+                index_offset += len(word)-len(str(number))
+                change_list.append(match_obj)
+            return word
 
-    text = text.strip()
-    print(text)
-    text = re.sub(REGEX_EXPRESSION, convert_number_to_word, text)
-    print(text)
-    print(change_list)
-    return text, change_list
+        text = text.strip()
+        print(text)
+        text = re.sub(REGEX_EXPRESSION, convert_number_to_word, text)
+        print(text)
+        print(change_list)
+        logger.debug(f"Processed text result: {text[:100]}...")  # Log first 100 chars
+        return text, change_list
+    except Exception as e:
+        logger.error(f"Error in handle_number_preprocessing: {str(e)}")
+        raise

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { H } from '@/lib/highlight'; // Adjust path based on your structure
+
 
 export async function POST(req: NextRequest) {
   try {
