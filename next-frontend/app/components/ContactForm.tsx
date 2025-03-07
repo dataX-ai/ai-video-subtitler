@@ -12,10 +12,29 @@ const ContactForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement form submission logic
-    console.log("Form submitted:", formData);
-    // Reset form
-    setFormData({ name: "", email: "", subject: "", message: "" });
+    try {
+      const response = await fetch('/api/form-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          formType: 'contact',
+          data: formData
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit form');
+      }
+
+      // Reset form
+      setFormData({ name: "", email: "", subject: "", message: "" });
+      // You might want to add success message handling here
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      // You might want to add error message handling here
+    }
   };
 
   const handleChange = (

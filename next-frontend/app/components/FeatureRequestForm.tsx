@@ -13,16 +13,35 @@ const FeatureRequestForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement form submission logic
-    console.log("Feature request submitted:", formData);
-    // Reset form
-    setFormData({
-      title: "",
-      description: "",
-      useCase: "",
-      priority: "medium",
-      email: "",
-    });
+    try {
+      const response = await fetch('/api/form-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          formType: 'feature',
+          data: formData
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit form');
+      }
+
+      // Reset form
+      setFormData({
+        title: "",
+        description: "",
+        useCase: "",
+        priority: "medium",
+        email: "",
+      });
+      // You might want to add success message handling here
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      // You might want to add error message handling here
+    }
   };
 
   const handleChange = (
