@@ -12,15 +12,34 @@ const FeedbackForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement form submission logic
-    console.log("Feedback submitted:", formData);
-    // Reset form
-    setFormData({
-      type: "general",
-      rating: "5",
-      feedback: "",
-      email: "",
-    });
+    try {
+      const response = await fetch('/api/form-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          formType: 'feedback',
+          data: formData
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit form');
+      }
+
+      // Reset form
+      setFormData({
+        type: "general",
+        rating: "5",
+        feedback: "",
+        email: "",
+      });
+      // You might want to add success message handling here
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      // You might want to add error message handling here
+    }
   };
 
   const handleChange = (
