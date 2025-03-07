@@ -8,7 +8,7 @@ import { writeFile, readFile, unlink } from 'fs/promises'
 import { uploadToGCS } from "../../utils/storage"
 import fs from "fs";
 import { v4 as uuidv4 } from 'uuid';
-import { H } from "@highlight-run/node"; // Adjust path based on your structure
+import { H } from '@/lib/highlight'; // Adjust path based on your structure
 
 let transcriptionClient: OpenAI | AzureOpenAI;
 
