@@ -20,15 +20,18 @@ load_dotenv()
 
 app = Flask(__name__)
 
-H = highlight_io.H(
-	os.getenv("HIGHLIGHT_PROJECT_ID"),
-	integrations=[FlaskIntegration()],
-	instrument_logging=True,
-	service_name="subtitle-flask-backend",
-	log_level=logging.ERROR,
-	service_version="git-sha",
-	environment="production",
-)
+environment = os.getenv("ENV", "development")  # Default to development if not set
+
+if environment == "production":
+    H = highlight_io.H(
+        os.getenv("HIGHLIGHT_PROJECT_ID"),
+        integrations=[FlaskIntegration()],
+        instrument_logging=True,
+        service_name="subtitle-flask-backend",
+        log_level=logging.ERROR,
+        service_version="git-sha",
+        environment="production",
+    )
 
 logger.info("Initializing SubtitleService")
 service = SubtitleService()
@@ -76,6 +79,7 @@ def process_script():
 
         logger.info("Generating subtitles")
         output_video_file_path = service.generate_subtitles(
+            vid_id=data.id,
             script=data.script,
             audio_path=audio_file_path,
             video_file_path=video_file_path,

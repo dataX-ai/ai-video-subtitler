@@ -17,6 +17,9 @@ import requests
 import mutagen
 from rich.console import Console
 from logger_config import setup_logger
+from dotenv import load_dotenv
+
+load_dotenv()
 
 console = Console()
 logger = setup_logger(__name__)
@@ -30,7 +33,7 @@ SPACE_SYLLABEL = 'SPACE'
 
 class SubtitleService():
     def __init__(self, gcs_bucket_name:str = "2vid-temp-video-bckt"):
-
+        gcs_bucket_name = os.environ.get('GOOGLE_CLOUD_BUCKET_NAME')
         if os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'):
             # Use the credentials file specified in environment variable
             self.storage_client = storage.Client.from_service_account_json(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'))
@@ -97,7 +100,7 @@ class SubtitleService():
                 raise
 
 
-    def generate_subtitles(self,script:str,audio_path:str,video_file_path:str,output_file_path:str,language:str='English',subtitle_style=None)->str:
+    def generate_subtitles(self,vid_id:str,script:str,audio_path:str,video_file_path:str,output_file_path:str,language:str='English',subtitle_style=None)->str:
         logger.info(f"Generating subtitles for language: {language}")
         translated_message = script
         original_message = translated_message.encode(ENCODING).decode(ENCODING)
@@ -153,11 +156,11 @@ class SubtitleService():
                 srt_str += '\n'
                 srt_str += line + '\n\n'
                 line = ''
+        
+        subtitle_file = os.path.join(f'./output/video_{vid_id}.srt')
+        with open(subtitle_file, 'w', encoding=ENCODING) as f:
+            f.write(srt_str)
 
-        subtitle_file = os.path.join('./video.srt')
-        f = open(subtitle_file, 'w', encoding=ENCODING)
-        f.write(srt_str)
-        f.close()
         logger.debug(f"Generated subtitle file at: {subtitle_file}")
         logger.info("[bold blue]Burning Subtitles to Video[/bold blue]")
 
@@ -357,7 +360,7 @@ class SubtitleService():
 
         # Get font size from subtitle_style if it exists, otherwise use default
         # Font size in points (pt). 50pt ≈ 67px at standard screen resolution
-        font_size = int(subtitle_style.size*10*3/4) if subtitle_style and subtitle_style.size else 50
+        font_size = int(subtitle_style.size*3*3/4) if subtitle_style and subtitle_style.size else 50
         subs_by_frame = iter(subs_by_frame)
 
         # result = video.fl_image(pipeline)
