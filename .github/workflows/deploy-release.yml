@@ -62,10 +62,6 @@ jobs:
                 
                 log_message "=== Deployment Started at $(date) ==="
                 
-                # Search for deploy-app.sh in various locations
-                log_message "Searching for deploy-app.sh in various locations..."
-                find / -name deploy-app.sh -type f 2>>"$LOG_FILE" || log_message "No deploy-app.sh found in filesystem"
-                
                 DEPLOY_SCRIPT="/home/azureuser/deploy-app.sh"
                 
                 if [ -f "$DEPLOY_SCRIPT" ]; then
