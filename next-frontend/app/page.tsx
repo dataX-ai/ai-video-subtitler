@@ -14,15 +14,15 @@ const sampleVideos = [
   },
   {
     id: 2,
-    title: "Tutorial",
-    src: "/videos/tutorial.mp4",
-    description: "Learn how to use our application",
+    title: "Movie Scene",
+    src: "/videos/movie.mp4",
+    description: "Little manoeuvre",
   },
   {
     id: 3,
-    title: "Customer Testimonial",
-    src: "/videos/testimonial.mp4",
-    description: "Hear what our customers have to say",
+    title: "Youtube Videos",
+    src: "/videos/youtube.mp4",
+    description: "Tom Scott out of context",
   },
 ];
 

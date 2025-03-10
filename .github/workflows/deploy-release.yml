@@ -101,4 +101,12 @@ jobs:
                 '
             )
             
+            # Check if the last line contains SUCCESS
+            if echo "$output" | grep -q "SUCCESS"; then
+              echo "Deployment successful!"
+            else
+              echo "Deployment failed!"
+              exit 1
+            fi
+            
             echo "Deployment completed. Logs available on the VM at /home/azureuser/deployment_logs/"
