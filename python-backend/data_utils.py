@@ -61,8 +61,9 @@ def handle_number_preprocessing(text, language=Languages.ENGLISH, delimeter=' ')
             if type(number_match) is re.Match:
                 nonlocal index_offset
                 number = number_match.group(0)
-                print('Number:: ', number)
-                word = num2words(number)
+                cleaned_number = number.replace(',', '')
+                print('Number:: ', number)   
+                word = num2words(cleaned_number)
                 if language != Languages.ENGLISH:
                     dest_lang_code = get_google_tanslate_langcode(language)
                     translator = Translator(service_urls=['translate.googleapis.com'])
