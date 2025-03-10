@@ -82,9 +82,7 @@ const Footer = () => {
             <h3 className="text-lg font-semibold text-white">Contact Us</h3>
             <div className="flex items-center">
               <FaEnvelope className="text-gray-300 mr-2" />
-              <span className="text-gray-300">
-                support@aivideosubtitler.com
-              </span>
+              <span className="text-gray-300">parth@ateulerlabs.com</span>
             </div>
             <p className="text-gray-300">
               Have questions? We&apos;re here to help!
@@ -139,7 +137,7 @@ const Footer = () => {
 
         <div className="border-t border-gray-700 mt-8 pt-8 text-center">
           <p className="text-gray-400">
-            © {currentYear} AI Video Subtitler. All rights reserved.
+            © {currentYear} Euler Labs. All rights reserved.
           </p>
         </div>
       </div>
