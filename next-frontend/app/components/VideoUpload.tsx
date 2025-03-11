@@ -20,8 +20,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import React from "react";
 import { ChromePicker, ColorResult } from "react-color";
-import Draggable from "react-draggable";
 import SubtitleCustomizer from "./SubtitleCustomizer";
+import { SubtitleStyle } from "../utils/subtitle-utils";
+import SubtitleRenderer from "./SubtitleRenderer";
 
 interface VideoUploadProps {
   initialVideoSrc?: string;
@@ -35,6 +36,7 @@ interface VideoUploadProps {
     setUniqueId: (id: string) => void,
     setSegments: (segments: TranscriptionSegment[]) => void
   ) => void;
+  onRemove?: () => void;
 }
 
 export type SubtitleColors = {
@@ -51,7 +53,6 @@ export type SubtitleColors = {
 export type SubtitleFont = "NotoSans" | "Arial" | "Roboto";
 export type SubtitlePosition = { x: number; y: number };
 
-// Define the segment type
 export type TranscriptionSegment = {
   id: number;
   start: number;
@@ -59,11 +60,13 @@ export type TranscriptionSegment = {
   text: string;
 };
 
+
 const VideoUpload = ({
   initialVideoSrc,
   initialVideoFile,
   isPreselectedVideo = false,
   onUpload,
+  onRemove,
 }: VideoUploadProps) => {
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [transcription, setTranscription] = useState("");
@@ -105,6 +108,12 @@ const VideoUpload = ({
     initialVideoSrc || null
   );
   const [isProcessingPreselected, setIsProcessingPreselected] = useState(false);
+
+  // Add a ref for the video element
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Add state to control subtitle renderer visibility
+  const [showSubtitlePreview, setShowSubtitlePreview] = useState(true);
 
   // Modify useEffect to handle pre-selected videos
   useEffect(() => {
@@ -262,24 +271,22 @@ const VideoUpload = ({
         ),
       };
 
-      // Create a payload with segments
-      const payload = {
-        audioUrl,
-        uniqueId,
-        transcription,
-        segments,
-        subtitleColors,
-        subtitleFont,
-        subtitlePosition: scalablePosition,
-        subtitleSize,
-      };
+
+
+      const formData = new FormData();
+      formData.append('video', currentFile!);
+      formData.append('audioUrl', audioUrl);
+      formData.append('uniqueId', uniqueId);
+      formData.append('transcription', transcription);
+      formData.append('segments', JSON.stringify(segments));
+      formData.append('subtitleColors', JSON.stringify(subtitleColors));
+      formData.append('subtitleFont', subtitleFont);
+      formData.append('subtitlePosition', JSON.stringify(scalablePosition));
+      formData.append('subtitleSize', subtitleSize.toString());
 
       const response = await fetch("/api/add-subtitles", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: formData,
       });
 
       const data = await response.json();
@@ -359,6 +366,11 @@ const VideoUpload = ({
     setAudioUrl("");
     setSubtitledVideoUrl(null);
     setSubtitlePosition({ x: 0, y: 0 });
+    
+    // Call the onRemove callback to notify parent
+    if (onRemove) {
+      onRemove();
+    }
   };
 
   // Clean up the URL when component unmounts or video changes
@@ -422,6 +434,13 @@ const VideoUpload = ({
     }
   };
 
+  // Create a subtitle style object from the current settings
+  const subtitleStyle: SubtitleStyle = {
+    font: subtitleFont,
+    position: subtitlePosition,
+    colors: subtitleColors,
+    fontSize: subtitleSize
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -489,57 +508,19 @@ const VideoUpload = ({
                     <div className="aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg border border-gray-800">
                       <video
                         key={videoPreview}
+                        ref={videoRef}
                         src={subtitledVideoUrl || videoPreview}
                         className="w-full h-full"
                         controls
                         controlsList="nodownload"
                       />
+                      <SubtitleRenderer
+                        videoRef={videoRef}
+                        segments={segments}
+                        subtitleStyle={subtitleStyle}
+                        visible={true}
+                      />
 
-                      {!subtitledVideoUrl && (
-                        <Draggable
-                          position={subtitlePosition}
-                          onDrag={(e, data) =>
-                            setSubtitlePosition({ x: data.x, y: data.y })
-                          }
-                          bounds="parent"
-                        >
-                          <div
-                            className="cursor-move space-y-1"
-                            style={{
-                              position: "absolute",
-                              left: "50%",
-                              top: "50%",
-                              transform: "translate(-50%, -50%)",
-                              zIndex: 50,
-                            }}
-                          >
-                            <div
-                              className="px-3 py-1 md:px-4 md:py-1.5 rounded-full font-medium whitespace-nowrap shadow-md"
-                              style={{
-                                color: subtitleColors.line1.text,
-                                backgroundColor:
-                                  subtitleColors.line1.background,
-                                fontFamily: subtitleFont,
-                                fontSize: `${subtitleSize}px`,
-                              }}
-                            >
-                              <p>You and me</p>
-                            </div>
-                            <div
-                              className="px-3 py-1 md:px-4 md:py-1.5 rounded-full font-medium whitespace-nowrap shadow-md"
-                              style={{
-                                color: subtitleColors.line2.text,
-                                backgroundColor:
-                                  subtitleColors.line2.background,
-                                fontFamily: subtitleFont,
-                                fontSize: `${subtitleSize}px`,
-                              }}
-                            >
-                              <p>here and now</p>
-                            </div>
-                          </div>
-                        </Draggable>
-                      )}
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-4">

@@ -47,10 +47,6 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showVideoUpload, setShowVideoUpload] = useState(false);
   const [videosMissing, setVideosMissing] = useState(false);
-  const [segments, setSegments] = useState<TranscriptionSegment[]>([]);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const [audioUrl, setAudioUrl] = useState("");
-  const [uniqueId, setUniqueId] = useState("");
   const [isHandlingVideoSelection, setIsHandlingVideoSelection] = useState(false);
 
   // Add a ref to track if we've already made an API call
@@ -96,6 +92,7 @@ export default function Home() {
         console.error("Error uploading video:", error);
       } finally {
         setIsTranscribing(false);
+        hasCalledApiRef.current = false;
       }
     } else {
       console.log("Preventing duplicate API call");
@@ -250,16 +247,21 @@ export default function Home() {
     };
   }, []);
 
-  // If a video is selected and we're ready to show the VideoUpload component
+  const handleRemoveVideo = () => {
+    setShowVideoUpload(false);
+    setSelectedVideo(null);
+    setSelectedFile(null);
+    setIsUploadedVideo(false);
+  };
+
   if (showVideoUpload && selectedVideo && selectedFile) {
-    console.log("debug console to test api call");
-    
     return (
       <VideoUpload
         initialVideoSrc={selectedVideo}
         initialVideoFile={selectedFile}
         isPreselectedVideo={!isUploadedVideo}
         onUpload={handleUpload}
+        onRemove={handleRemoveVideo}
       />
     );
   }
