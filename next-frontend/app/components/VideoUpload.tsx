@@ -32,7 +32,8 @@ interface VideoUploadProps {
     setTranscription: (text: string) => void,
     setIsTranscribing: (value: boolean) => void,
     setAudioUrl: (url: string) => void,
-    setUniqueId: (id: string) => void
+    setUniqueId: (id: string) => void,
+    setSegments: (segments: TranscriptionSegment[]) => void
   ) => void;
 }
 
@@ -50,6 +51,14 @@ export type SubtitleColors = {
 export type SubtitleFont = "NotoSans" | "Arial" | "Roboto";
 export type SubtitlePosition = { x: number; y: number };
 
+// Define the segment type
+export type TranscriptionSegment = {
+  id: number;
+  start: number;
+  end: number;
+  text: string;
+};
+
 const VideoUpload = ({
   initialVideoSrc,
   initialVideoFile,
@@ -58,6 +67,7 @@ const VideoUpload = ({
 }: VideoUploadProps) => {
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [transcription, setTranscription] = useState("");
+  const [segments, setSegments] = useState<TranscriptionSegment[]>([]);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [isGeneratingSubtitles, setIsGeneratingSubtitles] = useState(false);
@@ -134,7 +144,8 @@ const VideoUpload = ({
             }
           },
           setAudioUrl,
-          setUniqueId
+          setUniqueId,
+          setSegments
         );
       }
     };
@@ -186,21 +197,43 @@ const VideoUpload = ({
           }
         },
         setAudioUrl,
-        setUniqueId
+        setUniqueId,
+        setSegments
       );
     }
   };
 
-  const handleGenerateSubtitles = async () => {
-    if (!currentFile || !transcription || !audioUrl || isGeneratingSubtitles) {
-      return;
-    }
+  // Format time from seconds to MM:SS.ms format
+  const formatTime = (timeInSeconds: number): string => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    const milliseconds = Math.floor((timeInSeconds % 1) * 1000);
+    
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+  };
 
-    setIsGeneratingSubtitles(true);
-    console.log("Generating subtitles...", transcription);
+  // Update a specific segment's text
+  const updateSegmentText = (id: number, newText: string) => {
+    setSegments(prevSegments => 
+      prevSegments.map(segment => 
+        segment.id === id ? { ...segment, text: newText } : segment
+      )
+    );
+    
+    // Also update the full transcription for compatibility with existing code
+    const updatedTranscription = segments
+      .map(segment => segment.id === id ? newText : segment.text)
+      .join(' ');
+    setTranscription(updatedTranscription);
+  };
+
+  const handleGenerateSubtitles = async () => {
+    if (!audioUrl || !transcription) return;
 
     try {
-      console.log("Generating subtitles...");
+      setIsGeneratingSubtitles(true);
+
+      // Get video dimensions for positioning
       const videoElement = document.querySelector("video");
       const videoRect = videoElement?.getBoundingClientRect();
 
@@ -229,39 +262,27 @@ const VideoUpload = ({
         ),
       };
 
-      console.log("Video dimensions:", videoRect.width, "x", videoRect.height);
-      console.log("Center X point:", centerX);
-      console.log(
-        "Subtitle position (from top-left):",
-        subtitlePosition.x,
-        subtitlePosition.y
-      );
-      console.log(
-        "Scalable position - x as % from center, y as relative position:",
-        scalablePosition.x,
-        scalablePosition.y
-      );
-
-      const formData = new FormData();
-      formData.append("video", currentFile);
-      formData.append("transcription", transcription);
-      formData.append("audioUrl", audioUrl);
-      formData.append("subtitleColors", JSON.stringify(subtitleColors));
-      formData.append("subtitleFont", subtitleFont);
-      formData.append("subtitlePosition", JSON.stringify(scalablePosition));
-      formData.append("subtitleSize", subtitleSize.toString());
-      formData.append("uniqueId", uniqueId);
+      // Create a payload with segments
+      const payload = {
+        audioUrl,
+        uniqueId,
+        transcription,
+        segments,
+        subtitleColors,
+        subtitleFont,
+        subtitlePosition: scalablePosition,
+        subtitleSize,
+      };
 
       const response = await fetch("/api/add-subtitles", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to generate subtitles");
-      }
 
       if (data.subtitledVideoUrl) {
         setSubtitledVideoUrl(data.subtitledVideoUrl);
@@ -272,10 +293,11 @@ const VideoUpload = ({
             block: "center",
           });
         }, 1000);
+      } else {
+        console.error("Failed to generate subtitles");
       }
     } catch (error) {
       console.error("Error generating subtitles:", error);
-      // You might want to show an error message to the user here
     } finally {
       setIsGeneratingSubtitles(false);
     }
@@ -400,51 +422,6 @@ const VideoUpload = ({
     }
   };
 
-  // Modify the handleUpload function to handle pre-selected videos
-  const handleUpload = async () => {
-    if (isPreselectedVideo && videoSrc) {
-      // For pre-selected videos, we can skip the upload step
-      setIsProcessingPreselected(true);
-
-      try {
-        // Process the pre-selected video
-        // This would typically involve sending the video URL to your backend
-        // for processing, but for now we'll simulate it
-
-        // Simulate processing delay
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-
-        // Set subtitles (this would normally come from your backend)
-        setSubtitles([
-          {
-            id: "1",
-            startTime: 0,
-            endTime: 5,
-            text: "This is a sample subtitle.",
-          },
-          {
-            id: "2",
-            startTime: 6,
-            endTime: 10,
-            text: "For the pre-selected video.",
-          },
-          // Add more sample subtitles as needed
-        ]);
-
-        setIsProcessingPreselected(false);
-        setCurrentStep(2); // Move to the subtitle customization step
-      } catch (error) {
-        console.error("Error processing pre-selected video:", error);
-        setIsProcessingPreselected(false);
-        // Handle error appropriately
-      }
-
-      return;
-    }
-
-    // Original upload logic for user-uploaded videos
-    // ... existing upload logic ...
-  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -726,7 +703,8 @@ const VideoUpload = ({
                               setTranscription,
                               setIsTranscribing,
                               setAudioUrl,
-                              setUniqueId
+                              setUniqueId,
+                              setSegments
                             )
                           }
                           className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm md:text-base font-medium flex items-center gap-2 shadow-lg shadow-indigo-600/20"
@@ -746,14 +724,35 @@ const VideoUpload = ({
                       </div>
                     )}
 
-                    <textarea
-                      ref={textEditorRef}
-                      value={transcription}
-                      onChange={(e) => setTranscription(e.target.value)}
-                      className="w-full h-[250px] md:h-[300px] lg:h-[400px] p-5 bg-[#0B1120] text-gray-200 rounded-xl border border-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-base md:text-lg"
-                      placeholder="Transcription will appear here..."
-                      disabled={isTranscribing}
-                    />
+                    {/* Replace textarea with segment editor */}
+                    {segments.length > 0 ? (
+                      <div className="w-full h-[250px] md:h-[300px] lg:h-[400px] overflow-y-auto p-5 bg-[#0B1120] text-gray-200 rounded-xl border border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                        {segments.map((segment) => (
+                          <div key={segment.id} className="mb-4 p-3 bg-gray-800/40 rounded-lg hover:bg-gray-800/60 transition-colors">
+                            <div className="flex justify-between text-xs text-gray-400 mb-2">
+                              <span>{formatTime(segment.start)}</span>
+                              <span>{formatTime(segment.end)}</span>
+                            </div>
+                            <textarea
+                              value={segment.text}
+                              onChange={(e) => updateSegmentText(segment.id, e.target.value)}
+                              className="w-full p-2 bg-[#0B1120] text-gray-200 rounded-lg border border-gray-700 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500/50 text-base"
+                              rows={2}
+                              disabled={isTranscribing}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <textarea
+                        ref={textEditorRef}
+                        value={transcription}
+                        onChange={(e) => setTranscription(e.target.value)}
+                        className="w-full h-[250px] md:h-[300px] lg:h-[400px] p-5 bg-[#0B1120] text-gray-200 rounded-xl border border-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-base md:text-lg"
+                        placeholder="Transcription will appear here..."
+                        disabled={isTranscribing}
+                      />
+                    )}
 
                     {/* Generate Button */}
                     {transcription && !isTranscribing && (

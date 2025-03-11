@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import VideoUpload from "./components/VideoUpload";
 import { FaPlay, FaUpload, FaSpinner } from "react-icons/fa";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faVideo } from "@fortawesome/free-solid-svg-icons";
+import { TranscriptionSegment } from "./components/VideoUpload";
 
 // Sample videos from public folder
 const sampleVideos = [
@@ -44,6 +47,10 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showVideoUpload, setShowVideoUpload] = useState(false);
   const [videosMissing, setVideosMissing] = useState(false);
+  const [segments, setSegments] = useState<TranscriptionSegment[]>([]);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [audioUrl, setAudioUrl] = useState("");
+  const [uniqueId, setUniqueId] = useState("");
 
   // Handle sample video selection
   const handleSampleVideoSelect = async (videoSrc: string, index: number) => {
@@ -190,11 +197,12 @@ export default function Home() {
         initialVideoFile={selectedFile}
         isPreselectedVideo={!isUploadedVideo}
         onUpload={async (
-          file: File,
-          setTranscription: (text: string) => void,
-          setIsTranscribing: (value: boolean) => void,
-          setAudioUrl: (url: string) => void,
-          setUniqueId: (id: string) => void
+          file,
+          setTranscription,
+          setIsTranscribing,
+          setAudioUrl,
+          setUniqueId,
+          setSegments
         ) => {
           const formData = new FormData();
           formData.append("video", file);
@@ -211,6 +219,11 @@ export default function Home() {
               setTranscription(data.transcription);
               setAudioUrl(data.audioUrl);
               setUniqueId(data.uniqueId);
+              
+              // Handle segments if they exist in the response
+              if (data.segments && Array.isArray(data.segments)) {
+                setSegments(data.segments);
+              }
             } else if (data.error) {
               console.error("Transcription error:", data.error);
             }
