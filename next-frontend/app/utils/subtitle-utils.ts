@@ -1,7 +1,5 @@
 import { TranscriptionSegment } from "../components/VideoUpload";
-import opentype from 'opentype.js';
-import fs from 'fs';
-import path from 'path';
+
 export const MAX_SEGMENT_LENGTH = 3; // maximum length in seconds
 export const MIN_SEGMENT_LENGTH = 1; // minimum length in seconds
 
@@ -9,26 +7,62 @@ export const MIN_SEGMENT_LENGTH = 1; // minimum length in seconds
 // utils/measureText.js
 
 
-export async function measureText(text:string, fontSize:number, fontName:string) {
-  try {
-    let font;
-    
-    // We should only be using client-side approach in the browser
-    if (typeof window === 'undefined') {
-      // Server-side: use filesystem
-      const fontPath = path.join(process.cwd(), 'public', 'js', 'libass', `${fontName}.ttf`);
-      font = opentype.loadSync(fontPath);
-    } else {
-      // Client-side: use URL
-      font = await opentype.load(`/js/libass/${fontName || 'Arial'}.ttf`);
-    }
-    
-    return font.getAdvanceWidth(text, fontSize);
-  } catch (error) {
-    console.error('Error measuring text:', error);
-    // Return a fallback estimate when measurement fails
-    return text.length * fontSize * 0.6; 
+export function measureText(text, fontSize, fontName) {
+  // Character width approximations (relative to fontSize)
+  const charWidthMap = {
+    // Narrow characters
+    'i': 0.3, 'l': 0.3, 'I': 0.3, 'j': 0.3, 't': 0.4, 'f': 0.4, 'r': 0.4,
+    // Normal characters
+    'a': 0.5, 'b': 0.5, 'c': 0.5, 'd': 0.5, 'e': 0.5, 'g': 0.5, 'h': 0.5, 'k': 0.5, 
+    'n': 0.5, 'o': 0.5, 'p': 0.5, 'q': 0.5, 's': 0.5, 'u': 0.5, 'v': 0.5, 'x': 0.5, 
+    'y': 0.5, 'z': 0.5, 'A': 0.7, 'B': 0.7, 'C': 0.7, 'D': 0.7, 'E': 0.6, 'F': 0.6, 
+    'G': 0.7, 'H': 0.7, 'J': 0.5, 'K': 0.7, 'L': 0.6, 'N': 0.7, 'O': 0.7, 'P': 0.7, 
+    'Q': 0.7, 'R': 0.7, 'S': 0.7, 'T': 0.6, 'U': 0.7, 'V': 0.7, 'X': 0.7, 'Y': 0.7, 
+    'Z': 0.6, '0': 0.6, '1': 0.4, '2': 0.6, '3': 0.6, '4': 0.6, '5': 0.6, '6': 0.6, 
+    '7': 0.6, '8': 0.6, '9': 0.6,
+    // Wide characters
+    'm': 0.8, 'w': 0.8, 'M': 0.9, 'W': 0.9,
+    // Punctuation and special characters
+    '.': 0.3, ',': 0.3, ':': 0.3, ';': 0.3, ' ': 0.3, '!': 0.3, '?': 0.6,
+    '(': 0.4, ')': 0.4, '[': 0.4, ']': 0.4, '{': 0.4, '}': 0.4,
+    '@': 0.9, '#': 0.7, '$': 0.6, '%': 0.9, '^': 0.5, '&': 0.7, '*': 0.5,
+    '-': 0.4, '+': 0.6, '=': 0.6, '_': 0.6, '~': 0.6, '`': 0.3, "'": 0.3, '"': 0.5,
+    '/': 0.4, '\\': 0.4, '|': 0.3, '<': 0.6, '>': 0.6
+  };
+
+  // Font scaling based on common fonts
+  // Add more fonts with their approximate scaling factors
+  const fontScaling = {
+    'Arial': 1.0,
+    'Helvetica': 1.0,
+    'Times New Roman': 0.95,
+    'Times': 0.95,
+    'Courier New': 1.1,
+    'Courier': 1.1,
+    'Verdana': 1.05,
+    'Georgia': 1.0,
+    'Palatino': 1.0,
+    'Garamond': 0.9,
+    'Bookman': 1.05,
+    'Comic Sans MS': 1.1,
+    'Trebuchet MS': 1.0,
+    'Arial Black': 1.15,
+    'Impact': 1.1,
+    'Tahoma': 1.0
+  };
+
+  let totalWidth = 0;
+  const fontFactor = fontScaling[fontName] || 1.0; // Default scaling if font not found
+
+  // Calculate width based on each character
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const charWidth = charWidthMap[char] || 0.6; // Default width for unknown characters
+    totalWidth += charWidth;
   }
+
+  // Apply font size and font scaling
+  return totalWidth * fontSize * fontFactor;
 }
 
 /**
