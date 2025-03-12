@@ -19,7 +19,6 @@ import {
   faDownload,
   faPlay,
   faPause,
-  faExpand,
   faVolumeUp,
   faVolumeMute,
 } from "@fortawesome/free-solid-svg-icons";
@@ -105,7 +104,7 @@ const VideoUpload = ({
   // Add a ref for the video element
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Add states for custom video controls
+  // Add new state for video controls
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -373,66 +372,7 @@ const VideoUpload = ({
     fontSize: subtitleSize
   };
 
-  // We need to keep the basic video time update event listener
-  useEffect(() => {
-    if (videoRef.current) {
-      const videoElement = videoRef.current;
-      
-      const handleTimeUpdate = () => {
-        setCurrentTime(videoElement.currentTime);
-      };
-      
-      const handleDurationChange = () => {
-        setDuration(videoElement.duration);
-      };
-      
-      const handlePlay = () => {
-        setIsPlaying(true);
-      };
-      
-      const handlePause = () => {
-        setIsPlaying(false);
-      };
-      
-      const handleEnded = () => {
-        setIsPlaying(false);
-      };
-      
-      // Add event listeners
-      videoElement.addEventListener('timeupdate', handleTimeUpdate);
-      videoElement.addEventListener('durationchange', handleDurationChange);
-      videoElement.addEventListener('play', handlePlay);
-      videoElement.addEventListener('pause', handlePause);
-      videoElement.addEventListener('ended', handleEnded);
-      
-      // Remove event listeners on cleanup
-      return () => {
-        videoElement.removeEventListener('timeupdate', handleTimeUpdate);
-        videoElement.removeEventListener('durationchange', handleDurationChange);
-        videoElement.removeEventListener('play', handlePlay);
-        videoElement.removeEventListener('pause', handlePause);
-        videoElement.removeEventListener('ended', handleEnded);
-      };
-    }
-  }, []);
-
-  // Simple handle seek function for the input range
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (videoRef.current) {
-      const newTime = parseFloat(e.target.value);
-      videoRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
-
-  // Format time function - make it more precise
-  const formatVideoTime = (timeInSeconds: number) => {
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = Math.floor(timeInSeconds % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-  };
-  
-  // Custom control handlers
+  // Handle play/pause toggle
   const togglePlay = () => {
     if (videoRef.current) {
       if (isPlaying) {
@@ -440,23 +380,66 @@ const VideoUpload = ({
       } else {
         videoRef.current.play();
       }
+      setIsPlaying(!isPlaying);
     }
   };
-  
-  const toggleMute = () => {
+
+  // Handle video time update
+  const handleTimeUpdate = () => {
     if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
+      setCurrentTime(videoRef.current.currentTime);
     }
   };
-  
+
+  // Handle seeking
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTime = parseFloat(e.target.value);
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
+  // Handle volume change
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
     if (videoRef.current) {
-      const newVolume = parseFloat(e.target.value);
       videoRef.current.volume = newVolume;
       setVolume(newVolume);
       setIsMuted(newVolume === 0);
     }
+  };
+
+  // Handle mute toggle
+  const toggleMute = () => {
+    if (videoRef.current) {
+      if (isMuted) {
+        videoRef.current.volume = volume || 0.5;
+        setIsMuted(false);
+      } else {
+        videoRef.current.volume = 0;
+        setIsMuted(true);
+      }
+    }
+  };
+
+  // Format time for display (MM:SS)
+  const formatDisplayTime = (timeInSeconds: number): string => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Update duration when video metadata is loaded
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+    }
+  };
+
+  // Update play state when video ends
+  const handleVideoEnded = () => {
+    setIsPlaying(false);
   };
 
   return (
@@ -523,13 +506,16 @@ const VideoUpload = ({
                     </h2>
 
                     <div className="flex flex-col">
-                      {/* Video container - without gap to controls */}
-                      <div className="aspect-video bg-black rounded-t-xl overflow-hidden relative shadow-lg border border-gray-800 border-b-0">
+                      {/* Video container */}
+                      <div className="aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg border border-gray-800">
                         <video
                           key={videoPreview}
                           ref={videoRef}
                           src={subtitledVideoUrl || videoPreview}
                           className="w-full h-full"
+                          onTimeUpdate={handleTimeUpdate}
+                          onLoadedMetadata={handleLoadedMetadata}
+                          onEnded={handleVideoEnded}
                         />
                         <SubtitleRenderer
                           videoRef={videoRef}
@@ -539,50 +525,53 @@ const VideoUpload = ({
                         />
                       </div>
                       
-                      {/* Video Controls - attached directly to video */}
-                      <div className="bg-gray-900 rounded-b-xl border border-gray-800">
-                        {/* Simpler input range with better granularity */}
-                        <input
-                          type="range"
-                          min="0"
-                          max={duration || 0}
-                          step="0.01"
-                          value={currentTime || 0}
-                          onChange={handleSeek}
-                          className="w-full h-2 bg-gray-700 appearance-none cursor-pointer accent-indigo-500 outline-none rounded-none"
-                        />
-                        
-                        {/* Controls Bar */}
-                        <div className="flex items-center justify-between px-3 py-2">
-                          {/* Left Controls */}
-                          <div className="flex items-center space-x-4">
-                            {/* Play/Pause Button */}
-                            <button onClick={togglePlay} className="text-white hover:text-indigo-400 transition-colors">
-                              <FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />
-                            </button>
-                            
-                            {/* Time Display */}
-                            <div className="text-white text-sm">
-                              {formatVideoTime(currentTime)} / {formatVideoTime(duration)}
-                            </div>
+                      {/* Custom video controls */}
+                      <div className="mt-3 bg-gray-900/80 rounded-lg p-3 border border-gray-800/50">
+                        <div className="flex flex-col space-y-2">
+                          {/* Progress bar */}
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-400 w-10">{formatDisplayTime(currentTime)}</span>
+                            <input
+                              type="range"
+                              min="0"
+                              max={duration || 100}
+                              step="0.1"
+                              value={currentTime}
+                              onChange={handleSeek}
+                              className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                            />
+                            <span className="text-xs text-gray-400 w-10">{formatDisplayTime(duration)}</span>
                           </div>
                           
-                          {/* Right Controls */}
-                          <div className="flex items-center space-x-4">
-                            {/* Volume Control */}
-                            <div className="flex items-center space-x-2">
-                              <button onClick={toggleMute} className="text-white hover:text-indigo-400 transition-colors">
-                                <FontAwesomeIcon icon={isMuted ? faVolumeMute : faVolumeUp} />
+                          {/* Controls */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              {/* Play/Pause button */}
+                              <button 
+                                onClick={togglePlay}
+                                className="text-white hover:text-indigo-400 transition-colors"
+                              >
+                                <FontAwesomeIcon icon={isPlaying ? faPause : faPlay} className="text-lg" />
                               </button>
-                              <input
-                                type="range"
-                                min="0"
-                                max="1"
-                                step="0.1"
-                                value={volume}
-                                onChange={handleVolumeChange}
-                                className="w-16 h-1 bg-gray-600 appearance-none cursor-pointer accent-indigo-500 outline-none"
-                              />
+                              
+                              {/* Volume controls */}
+                              <div className="flex items-center space-x-2">
+                                <button 
+                                  onClick={toggleMute}
+                                  className="text-white hover:text-indigo-400 transition-colors"
+                                >
+                                  <FontAwesomeIcon icon={isMuted ? faVolumeMute : faVolumeUp} className="text-lg" />
+                                </button>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="1"
+                                  step="0.01"
+                                  value={isMuted ? 0 : volume}
+                                  onChange={handleVolumeChange}
+                                  className="w-20 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
