@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { exec } from "child_process"
 import { promisify } from "util"
 import { uploadToGCS } from "../../utils/storage"
+import { generateAssContent, SubtitleStyle } from "../../utils/subtitle-utils"
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
@@ -14,10 +15,9 @@ async function burnSubtitles(
   segments: any[], 
   uniqueId: string,
   subtitleFont: string,
-  subtitlePosition: { x: number, y: number },
+  subtitlePosition: { y: number },
   subtitleColors: { 
-    line1: { text: string, background: string },
-    line2: { text: string, background: string }
+    line1: { text: string, background: string }
   },
   subtitleSize: number
 ): Promise<string> {
@@ -36,16 +36,19 @@ async function burnSubtitles(
   const [width, height] = probeOutput.trim().split('x').map(Number);
 
   // Generate ASS subtitle content with video dimensions
-  const assContent = generateAssSubtitles(
+  const subtitleStyle: SubtitleStyle = {
+    font: subtitleFont,
+    position: subtitlePosition,
+    colors: subtitleColors,
+    fontSize: subtitleSize
+  }
+  const assContent = generateAssContent(
     segments,
-    subtitleFont,
-    subtitlePosition,
-    subtitleColors,
-    subtitleSize,
+    subtitleStyle,
     width,
     height
   )
-  
+
   // Write subtitle file
   await writeFileAsync(subtitlePath, assContent)
   console.log("subtitlePath", subtitlePath)
@@ -57,121 +60,31 @@ async function burnSubtitles(
   )
   
   // Upload to GCS
-  // const buffer = await fs.promises.readFile(outputVideoPath)
-  // const file = new File([buffer], `${uniqueId}_subtitled.mp4`, { type: 'video/mp4' })
-  // const outputUrl = await uploadToGCS(
-  //   file,
-  //   "subtitled_video",
-  //   uniqueId
-  // )
+  const buffer = await fs.promises.readFile(outputVideoPath)
+  const file = new File([buffer], `${uniqueId}_subtitled.mp4`, { type: 'video/mp4' })
+  const outputUrl = await uploadToGCS(
+    file,
+    "subtitled_video",
+    uniqueId
+  )
   
   // Clean up temporary files
-  // try {
-  //   // Read directory contents
-  //   const files = fs.readdirSync(tmpDir)
+  try {
+    // Read directory contents
+    const files = fs.readdirSync(tmpDir)
     
-  //   // Remove all files in directory
-  //   for (const file of files) {
-  //     fs.unlinkSync(path.join(tmpDir, file))
-  //   }
-    
-  //   // Then remove the directory
-  //   fs.rmdirSync(tmpDir)
-  // } catch (e) {
-  //   console.error("Error cleaning up temp files:", e)
-  // }
-  
-  return outputVideoPath
-}
-
-function splitIntoLines(text: string, maxCharsPerLine: number = 50): string {
-  const words = text.split(' ')
-  const lines: string[] = []
-  let currentLine = ''
-
-  words.forEach(word => {
-    if ((currentLine + ' ' + word).length <= maxCharsPerLine) {
-      currentLine = currentLine ? `${currentLine} ${word}` : word
-    } else {
-      if (currentLine) lines.push(currentLine)
-      currentLine = word
+    // Remove all files in directory
+    for (const file of files) {
+      fs.unlinkSync(path.join(tmpDir, file))
     }
-  })
-  
-  if (currentLine) lines.push(currentLine)
-  
-  return lines.join('\\N')
-}
-
-function generateAssSubtitles(
-  segments: any[],
-  font: string,
-  position: { x: number, y: number },
-  colors: { 
-    line1: { text: string, background: string },
-    line2: { text: string, background: string }
-  },
-  fontSize: number,
-  videoWidth: number,
-  videoHeight: number
-): string {
-  // Convert colors from hex to ASS format (AABBGGRR)
-  const primaryColor = hexToAssColor(colors.line1.text)
-  const outlineColor = hexToAssColor(colors.line1.background)
-  
-  let assContent = `[Script Info]
-Title: Auto-generated subtitles
-ScriptType: v4.00+
-WrapStyle: 0
-ScaledBorderAndShadow: yes
-YCbCr Matrix: TV.709
-PlayResX: ${videoWidth}
-PlayResY: ${videoHeight}
-
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,${font},${fontSize},&H${primaryColor},&H${outlineColor},&H${outlineColor},&H00000000,-1,0,0,0,100,100,0,0,1,2,0,2,0,${position.y},10,1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-`
-
-  // Add each segment as a dialogue line with modified text
-  segments.forEach(segment => {
-    const startTime = formatAssTime(segment.start)
-    const endTime = formatAssTime(segment.end)
     
-    // Split text into multiple lines without blur effect
-    const formattedText = splitIntoLines(segment.text)
-    
-    assContent += `Dialogue: 0,${startTime},${endTime},Default,,0,0,0,,${formattedText}\n`
-  })
-  
-  return assContent
-}
-
-// Helper function to convert hex color to ASS format
-function hexToAssColor(hex: string): string {
-  // Remove # if present
-  hex = hex.replace('#', '')
-  
-  // Parse the hex color
-  const r = parseInt(hex.substr(0, 2), 16)
-  const g = parseInt(hex.substr(2, 2), 16)
-  const b = parseInt(hex.substr(4, 2), 16)
-  
-  // Convert to ASS format: AABBGGRR (alpha, blue, green, red)
-  return `00${b.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${r.toString(16).padStart(2, '0')}`
-}
-
-// Helper function to format time into ASS format (h:mm:ss.cc)
-function formatAssTime(seconds: number): string {
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  const s = Math.floor(seconds % 60)
-  const cs = Math.floor((seconds % 1) * 100)
-  
-  return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${cs.toString().padStart(2, '0')}`
+    // Then remove the directory
+    fs.rmdirSync(tmpDir)
+  } catch (e) {
+    console.error("Error cleaning up temp files:", e)
+  }
+  console.log("outputUrl", outputUrl)
+  return outputUrl
 }
 
 export async function POST(req: NextRequest) {
@@ -198,7 +111,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Upload the original video to GCS
-    // const videoUrl = await uploadToGCS(video, "video", uniqueId)
+    const videoUrl = await uploadToGCS(video, "video", uniqueId)
     
     // Save the video to a temporary file
     const tmpDir = path.join(os.tmpdir(), uniqueId)

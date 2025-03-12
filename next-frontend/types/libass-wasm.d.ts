@@ -15,7 +15,7 @@ declare module 'libass-wasm' {
     
     dispose(): void;
     setTrackByUrl(url: string): void;
-    setTrackByContent(content: string): void;
+    setTrack(content: string): void;
     freeTrack(): void;
     setCurrentTime(time: number): void;
   }

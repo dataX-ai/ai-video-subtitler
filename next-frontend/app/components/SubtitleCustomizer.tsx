@@ -47,10 +47,9 @@ export default function SubtitleCustomizer({
             </h3>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {/* Line 1 Colors */}
             <div className="space-y-2">
-              <span className="text-sm text-gray-300 font-medium">Line 1</span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setActiveColorPicker("line1-text")}
@@ -66,33 +65,6 @@ export default function SubtitleCustomizer({
                   onClick={() => setActiveColorPicker("line1-bg")}
                   className="flex-1 h-8 rounded-lg border border-gray-700 flex items-center justify-center hover:border-indigo-500 transition-colors relative overflow-hidden"
                   style={{ backgroundColor: subtitleColors.line1.background }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/10"></div>
-                  <span className="text-[10px] sm:text-xs font-medium bg-gray-900/80 px-1.5 sm:px-2 py-0.5 rounded text-white relative z-10 truncate max-w-[90%]">
-                    BG
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            {/* Line 2 Colors */}
-            <div className="space-y-2">
-              <span className="text-sm text-gray-300 font-medium">Line 2</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setActiveColorPicker("line2-text")}
-                  className="flex-1 h-8 rounded-lg border border-gray-700 flex items-center justify-center hover:border-indigo-500 transition-colors relative overflow-hidden"
-                  style={{ backgroundColor: subtitleColors.line2.text }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/10"></div>
-                  <span className="text-[10px] sm:text-xs font-medium bg-gray-900/80 px-1.5 sm:px-2 py-0.5 rounded text-white relative z-10 truncate max-w-[90%]">
-                    Text
-                  </span>
-                </button>
-                <button
-                  onClick={() => setActiveColorPicker("line2-bg")}
-                  className="flex-1 h-8 rounded-lg border border-gray-700 flex items-center justify-center hover:border-indigo-500 transition-colors relative overflow-hidden"
-                  style={{ backgroundColor: subtitleColors.line2.background }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/10"></div>
                   <span className="text-[10px] sm:text-xs font-medium bg-gray-900/80 px-1.5 sm:px-2 py-0.5 rounded text-white relative z-10 truncate max-w-[90%]">
@@ -127,10 +99,25 @@ export default function SubtitleCustomizer({
             <FontAwesomeIcon icon={faGripLines} className="text-indigo-400" />
             <h3 className="text-sm font-medium text-gray-300">Position</h3>
           </div>
-          <p className="text-xs text-gray-400 mb-2 bg-gray-800/80 p-2 rounded-lg border border-gray-700/50">
-            Drag the subtitles directly on the video preview to position them
-            exactly where you want.
-          </p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                step="1"
+                min="0"
+                max="100"
+                value={subtitlePosition.y}
+                onChange={(e) => onPositionChange({ y: parseInt(e.target.value) })}
+                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+              />
+              <span className="text-sm text-gray-300 min-w-[60px]">
+                {subtitlePosition.y}%
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 bg-gray-800/80 p-2 rounded-lg border border-gray-700/50">
+              Use the slider to adjust the vertical position of subtitles. Negative values move up, positive values move down.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -144,11 +131,7 @@ export default function SubtitleCustomizer({
           <div className="relative bg-gradient-to-b from-gray-900 to-gray-950 p-5 rounded-xl shadow-2xl max-w-full border border-indigo-800/30">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-white font-medium">
-                {activeColorPicker.includes("line1") ? "Line 1" : "Line 2"}
-                {activeColorPicker.includes("text")
-                  ? " Text"
-                  : " Background"}{" "}
-                Color
+                {activeColorPicker.includes("text") ? "Text" : "Background"} Color
               </h3>
               <button
                 onClick={() => setActiveColorPicker(null)}
@@ -159,13 +142,9 @@ export default function SubtitleCustomizer({
             </div>
             <ChromePicker
               color={
-                activeColorPicker.includes("line1")
-                  ? activeColorPicker.includes("text")
-                    ? subtitleColors.line1.text
-                    : subtitleColors.line1.background
-                  : activeColorPicker.includes("text")
-                  ? subtitleColors.line2.text
-                  : subtitleColors.line2.background
+                activeColorPicker.includes("text")
+                  ? subtitleColors.line1.text
+                  : subtitleColors.line1.background
               }
               onChange={(color) => onColorChange(color, activeColorPicker)}
               disableAlpha={true}

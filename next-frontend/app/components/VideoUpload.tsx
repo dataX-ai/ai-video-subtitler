@@ -26,7 +26,7 @@ import {
 import React from "react";
 import { ChromePicker, ColorResult } from "react-color";
 import SubtitleCustomizer from "./SubtitleCustomizer";
-import { SubtitleStyle } from "../utils/subtitle-utils";
+import { SubtitleStyle, preprocessSegments, MAX_SEGMENT_LENGTH } from "../utils/subtitle-utils";
 import SubtitleRenderer from "./SubtitleRenderer";
 
 interface VideoUploadProps {
@@ -49,14 +49,10 @@ export type SubtitleColors = {
     text: string;
     background: string;
   };
-  line2: {
-    text: string;
-    background: string;
-  };
 };
 
 export type SubtitleFont = "NotoSans" | "Arial" | "Roboto";
-export type SubtitlePosition = { x: number; y: number };
+export type SubtitlePosition = { y: number };
 
 export type TranscriptionSegment = {
   id: number;
@@ -89,21 +85,13 @@ const VideoUpload = ({
       text: "#FFFFFF",
       background: "#A855F7",
     },
-    line2: {
-      text: "#FFFFFF",
-      background: "#7C3AED",
-    },
   });
   const [activeColorPicker, setActiveColorPicker] = useState<string | null>(
     null
   );
-  const [subtitlePosition, setSubtitlePosition] = useState<SubtitlePosition>({
-    x: 0,
-    y: 0,
-  });
+  const [subtitlePosition, setSubtitlePosition] = useState<SubtitlePosition>({ y: 3 });
   const [subtitleFont, setSubtitleFont] = useState<SubtitleFont>("Arial");
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [subtitleSize, setSubtitleSize] = useState<number>(5);
+  const [subtitleSize, setSubtitleSize] = useState<number>(30);
   const [showTranscriptionModal, setShowTranscriptionModal] = useState(false);
   const textEditorRef = useRef<HTMLTextAreaElement>(null);
   const videoComponentRef = useRef<HTMLDivElement>(null);
@@ -116,9 +104,6 @@ const VideoUpload = ({
 
   // Add a ref for the video element
   const videoRef = useRef<HTMLVideoElement>(null);
-  
-  // Add state to control subtitle renderer visibility
-  const [showSubtitlePreview, setShowSubtitlePreview] = useState(true);
 
   // Add states for custom video controls
   const [isPlaying, setIsPlaying] = useState(false);
@@ -144,7 +129,7 @@ const VideoUpload = ({
         setCurrentFile(initialVideoFile);
 
         // Reset subtitle position to center
-        setSubtitlePosition({ x: 0, y: 0 });
+        setSubtitlePosition({ y: 3 });
 
         // Start transcription process
         setShowTranscriptionModal(true);
@@ -166,7 +151,7 @@ const VideoUpload = ({
           },
           setAudioUrl,
           setUniqueId,
-          setSegments
+          (segments) => setSegments(preprocessSegments(segments))
         );
       }
     };
@@ -197,7 +182,7 @@ const VideoUpload = ({
       setCurrentFile(file);
 
       // Reset subtitle position to center
-      setSubtitlePosition({ x: 0, y: 0 });
+      setSubtitlePosition({ y: 3 });
 
       // Start the transcription process and show the modal
       setShowTranscriptionModal(true);
@@ -219,7 +204,7 @@ const VideoUpload = ({
         },
         setAudioUrl,
         setUniqueId,
-        setSegments
+        (segments) => setSegments(preprocessSegments(segments))
       );
     }
   };
@@ -263,28 +248,6 @@ const VideoUpload = ({
         return;
       }
 
-      // Calculate center of video
-      const centerX = videoRect.width / 2;
-
-      // Calculate position as percentage from center for x
-      // This will scale properly across different video sizes
-      const scalablePosition = {
-        // X: percentage from center (-50% to +50%)
-        // Negative means left of center, positive means right of center
-        x: ((subtitlePosition.x - centerX) / videoRect.width) * 100,
-
-        // Y: keep the original relative position calculation (0-1 range)
-        y: Math.min(
-          1,
-          Math.max(
-            0,
-            (subtitlePosition.y + videoRect.height / 2) / videoRect.height
-          )
-        ),
-      };
-
-
-
       const formData = new FormData();
       formData.append('video', currentFile!);
       formData.append('audioUrl', audioUrl);
@@ -293,7 +256,7 @@ const VideoUpload = ({
       formData.append('segments', JSON.stringify(segments));
       formData.append('subtitleColors', JSON.stringify(subtitleColors));
       formData.append('subtitleFont', subtitleFont);
-      formData.append('subtitlePosition', JSON.stringify(scalablePosition));
+      formData.append('subtitlePosition', JSON.stringify(subtitlePosition));
       formData.append('subtitleSize', subtitleSize.toString());
 
       const response = await fetch("/api/add-subtitles", {
@@ -322,50 +285,6 @@ const VideoUpload = ({
     }
   };
 
-  const getActiveColor = () => {
-    switch (activeColorPicker) {
-      case "line1-text":
-        return subtitleColors.line1.text;
-      case "line1-bg":
-        return subtitleColors.line1.background;
-      case "line2-text":
-        return subtitleColors.line2.text;
-      case "line2-bg":
-        return subtitleColors.line2.background;
-      default:
-        return "#FFFFFF";
-    }
-  };
-
-  const handleColorChange = (color: ColorResult) => {
-    switch (activeColorPicker) {
-      case "line1-text":
-        setSubtitleColors({
-          ...subtitleColors,
-          line1: { ...subtitleColors.line1, text: color.hex },
-        });
-        break;
-      case "line1-bg":
-        setSubtitleColors({
-          ...subtitleColors,
-          line1: { ...subtitleColors.line1, background: color.hex },
-        });
-        break;
-      case "line2-text":
-        setSubtitleColors({
-          ...subtitleColors,
-          line2: { ...subtitleColors.line2, text: color.hex },
-        });
-        break;
-      case "line2-bg":
-        setSubtitleColors({
-          ...subtitleColors,
-          line2: { ...subtitleColors.line2, background: color.hex },
-        });
-        break;
-    }
-  };
-
   const handleRemoveVideo = () => {
     if (videoPreview) {
       URL.revokeObjectURL(videoPreview);
@@ -377,7 +296,7 @@ const VideoUpload = ({
     setIsGeneratingSubtitles(false);
     setAudioUrl("");
     setSubtitledVideoUrl(null);
-    setSubtitlePosition({ x: 0, y: 0 });
+    setSubtitlePosition({ y: 3 });
     
     // Call the onRemove callback to notify parent
     if (onRemove) {
@@ -537,14 +456,6 @@ const VideoUpload = ({
       videoRef.current.volume = newVolume;
       setVolume(newVolume);
       setIsMuted(newVolume === 0);
-    }
-  };
-  
-  const requestFullscreen = () => {
-    if (videoRef.current) {
-      if (videoRef.current.requestFullscreen) {
-        videoRef.current.requestFullscreen();
-      }
     }
   };
 
@@ -744,8 +655,8 @@ const VideoUpload = ({
                           </div>
                           <input
                             type="range"
-                            min="5"
-                            max="32"
+                            min="15"
+                            max="64"
                             step="0.5"
                             value={subtitleSize}
                             onChange={(e) =>
@@ -776,24 +687,6 @@ const VideoUpload = ({
                                   ...subtitleColors,
                                   line1: {
                                     ...subtitleColors.line1,
-                                    background: color.hex,
-                                  },
-                                });
-                                break;
-                              case "line2-text":
-                                setSubtitleColors({
-                                  ...subtitleColors,
-                                  line2: {
-                                    ...subtitleColors.line2,
-                                    text: color.hex,
-                                  },
-                                });
-                                break;
-                              case "line2-bg":
-                                setSubtitleColors({
-                                  ...subtitleColors,
-                                  line2: {
-                                    ...subtitleColors.line2,
                                     background: color.hex,
                                   },
                                 });
@@ -840,7 +733,7 @@ const VideoUpload = ({
                               setIsTranscribing,
                               setAudioUrl,
                               setUniqueId,
-                              setSegments
+                              (segments) => setSegments(preprocessSegments(segments))
                             )
                           }
                           className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm md:text-base font-medium flex items-center gap-2 shadow-lg shadow-indigo-600/20"
