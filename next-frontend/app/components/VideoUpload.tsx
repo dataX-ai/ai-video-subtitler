@@ -666,7 +666,6 @@ const VideoUpload = ({
                             max={fontSizeRange.max}
                             step={1}
                             onValueCommit={(values) => {
-                              console.log(values);
                               setSubtitleSize(values[0]);
                             }}
                             className="w-full custom-slider"

@@ -13,6 +13,7 @@ import type {
   SubtitleFont,
   SubtitlePosition,
 } from "./VideoUpload";
+import { Slider } from "@/components/ui/slider"
 
 interface SubtitleCustomizerProps {
   subtitleColors: SubtitleColors;
@@ -101,15 +102,16 @@ export default function SubtitleCustomizer({
           </div>
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <input
-                type="range"
-                step="1"
-                min="0"
-                max="100"
-                value={subtitlePosition.y}
-                onChange={(e) => onPositionChange({ y: parseInt(e.target.value) })}
-                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-              />
+              <div className="flex-grow">
+                <Slider
+                  defaultValue={[subtitlePosition.y]}
+                  min={0}
+                  max={100}
+                  step={1}
+                  onValueCommit={(values) => onPositionChange({ y: values[0] })}
+                  className="w-full custom-slider"
+                />
+              </div>
               <span className="text-sm text-gray-300 min-w-[60px]">
                 {subtitlePosition.y}%
               </span>
@@ -160,6 +162,31 @@ export default function SubtitleCustomizer({
           </div>
         </div>
       )}
+
+      <style jsx global>{`
+        .custom-slider [data-orientation="horizontal"] {
+          height: 4px;
+          width: 100%;
+          background: #374151;
+          border-radius: 9999px;
+        }
+        
+        .custom-slider [role="slider"] {
+          display: block;
+          width: 20px;
+          height: 20px;
+          background-color: white;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          border-radius: 9999px;
+          cursor: pointer;
+        }
+
+        .custom-slider [data-orientation="horizontal"] > span {
+          height: 100%;
+          background: linear-gradient(90deg, #6366f1, #8b5cf6);
+          border-radius: 9999px;
+        }
+      `}</style>
     </div>
   );
 }

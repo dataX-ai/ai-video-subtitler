@@ -141,8 +141,6 @@ export async function generateAssContent(
   videoWidth: number,
   videoHeight: number
 ): Promise<string> {
-
-  console.log("Style", style, videoWidth, videoHeight);
   // Convert colors from hex to ASS format
   const primaryColor = hexToAssColor(style.colors.line1.text);
   const backgroundColor = hexToAssColor(style.colors.line1.background);
@@ -198,7 +196,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         ? await measureText(line, style.fontSize, style.font)
         : await measureText(line, style.fontSize, style.font);
       const boxWidth = Math.round(txtWidth);
-      console.log("Line: ", i ,line, line.length, boxWidth);
       const bgPosX = Math.round(videoWidth/2 + boxWidth/2);
       const bgPosY = Math.round(yPositionInPixels + (( i + 0.5) * boxHeight) - (boxHeight * (lines.length - 0.5)));
       
