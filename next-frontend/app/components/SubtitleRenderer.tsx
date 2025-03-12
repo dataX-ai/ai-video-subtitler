@@ -82,7 +82,7 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
           subContent: assContent,
           workerUrl: '/js/libass/subtitles-octopus-worker.js',
           legacyWorkerUrl: '/js/libass/subtitles-octopus-worker-legacy.js',
-          fonts: ['/js/libass/NotoSans.ttf', '/js/libass/Roboto.ttf', '/js/libass/Arial.ttf'],
+          fonts: ['/js/libass/default.woff2', '/js/libass/NotoSans.ttf', '/js/libass/Roboto.ttf', '/js/libass/Arial.ttf'],
           availableFonts: {
             'default': '/js/libass/default.woff2',
             '.fallback': '/js/libass/default.woff2',
