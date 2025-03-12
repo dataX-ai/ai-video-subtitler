@@ -111,6 +111,9 @@ const VideoUpload = ({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
 
+  // Add new state for video key
+  const [videoKey, setVideoKey] = useState<string>(Date.now().toString());
+
   // Modify useEffect to handle pre-selected videos
   useEffect(() => {
     if (initialVideoSrc && isPreselectedVideo) {
@@ -232,6 +235,23 @@ const VideoUpload = ({
     setTranscription(updatedTranscription);
   };
 
+  // Add useEffect to handle video source changes
+  useEffect(() => {
+    // Force video element to reload when subtitledVideoUrl changes
+    if (subtitledVideoUrl) {
+      setVideoKey(Date.now().toString());
+      
+      // Reset video state
+      setIsPlaying(false);
+      setCurrentTime(0);
+      
+      // Force reload if needed
+      if (videoRef.current) {
+        videoRef.current.load();
+      }
+    }
+  }, [subtitledVideoUrl]);
+
   const handleGenerateSubtitles = async () => {
     if (!audioUrl || !transcription) return;
 
@@ -266,6 +286,7 @@ const VideoUpload = ({
       const data = await response.json();
 
       if (data.subtitledVideoUrl) {
+        setSubtitledVideoUrl(null);
         setSubtitledVideoUrl(data.subtitledVideoUrl);
         // Scroll to video component after subtitle generation
         setTimeout(() => {
@@ -509,7 +530,7 @@ const VideoUpload = ({
                       {/* Video container */}
                       <div className="aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg border border-gray-800">
                         <video
-                          key={videoPreview}
+                          key={videoKey}
                           ref={videoRef}
                           src={subtitledVideoUrl || videoPreview}
                           className="w-full h-full"
