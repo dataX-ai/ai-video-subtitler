@@ -538,7 +538,10 @@ const VideoUpload = ({
                         <SubtitleRenderer
                           videoRef={videoRef}
                           segments={segments}
-                          subtitleStyle={subtitleStyle}
+                          font={subtitleFont}
+                          fontSize={subtitleSize}
+                          position={subtitlePosition}
+                          colors={subtitleColors}
                           visible={!subtitledVideoUrl}
                         />
                       </div>

@@ -6,7 +6,15 @@ import SubtitlesOctopus from 'libass-wasm';
 interface SubtitleRendererProps {
   videoRef: React.RefObject<HTMLVideoElement>;
   segments: TranscriptionSegment[];
-  subtitleStyle: SubtitleStyle;
+  font: string;
+  fontSize: number;
+  position: { y: number };
+  colors: {
+    line1: {
+      text: string;
+      background: string;
+    }
+  };
   visible?: boolean;
 }
 
@@ -16,7 +24,10 @@ interface SubtitleRendererProps {
 const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
   videoRef, 
   segments, 
-  subtitleStyle,
+  font,
+  fontSize,
+  position,
+  colors,
   visible = true
 }) => {
   const octopusRef = useRef<any>(null);
@@ -31,10 +42,18 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
     const generateSubtitles = async () => {
       try {
         const video = videoRef.current;
-        const videoWidth = video.videoWidth || 640;
-        const videoHeight = video.videoHeight || 360;
+        const videoWidth = video?.videoWidth || 640;
+        const videoHeight = video?.videoHeight || 360;
         
-        console.log(`Generating ASS for video dimensions: ${videoWidth}x${videoHeight}`);
+        console.log(`Generating ASS for video dimensions: ${JSON.stringify({font, fontSize, position, colors})}`);
+        
+        // Recreate subtitleStyle object from individual props
+        const subtitleStyle: SubtitleStyle = {
+          font,
+          fontSize,
+          position,
+          colors
+        };
         
         // Generate ASS content
         const content = await generateAssContent(
@@ -47,7 +66,7 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
           octopusRef.current.setTrack(content);
         }
         else {setAssContent(content);}
-        console.log("ASS subtitle content generated successfully", assContent);
+        // console.log("ASS subtitle content generated successfully", assContent);
       } catch (err) {
         console.error("Error generating ASS subtitle content:", err);
         setError("Failed to generate subtitle content");
@@ -55,14 +74,14 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
     };
     
     generateSubtitles();
-  }, [segments, subtitleStyle, videoRef]);
+  }, [segments, font, fontSize, position, colors, videoRef, isInitialized]);
 
   // Initialize or update SubtitlesOctopus when ASS content changes
   useEffect(() => {
-    if (!assContent || !videoRef.current || !visible) return;
-    
+    if (!videoRef.current || !visible) return;
+    console.log(`Debug videoRef`);
     // Function to initialize SubtitlesOctopus
-    const initializeOctopus = () => {
+    const initializeOctopus = async () => {
       // Clean up existing instance if it exists
       if (octopusRef.current) {
         try {
@@ -75,11 +94,30 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
       
       try {
         console.log("Initializing SubtitlesOctopus with direct content");
+
+        const videoObj = videoRef.current;
+        const videoWidth = videoObj?.videoWidth || 640;
+        const videoHeight = videoObj?.videoHeight || 360;
+
+        const subtitleStyle: SubtitleStyle = {
+          font,
+          fontSize,
+          position,
+          colors
+        };
+        
+        // Generate ASS content
+        const content = await generateAssContent(
+          segments,
+          subtitleStyle,
+          videoWidth,
+          videoHeight
+        );
         
         // Create new instance - let the library create its own canvas
         octopusRef.current = new SubtitlesOctopus({
-          video: videoRef.current,
-          subContent: assContent,
+          video: videoObj,
+          subContent: content,
           workerUrl: '/js/libass/subtitles-octopus-worker.js',
           legacyWorkerUrl: '/js/libass/subtitles-octopus-worker-legacy.js',
           fonts: ['/js/libass/default.woff2', '/js/libass/NotoSans.ttf', '/js/libass/Roboto.ttf', '/js/libass/Arial.ttf'],
@@ -133,7 +171,7 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
         octopusRef.current = null;
       }
     };
-  }, [assContent, visible, videoRef]);
+  }, [videoRef, visible]);
 
   // If component is not visible, don't render anything
   if (!visible) {
