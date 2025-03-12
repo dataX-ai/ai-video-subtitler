@@ -54,7 +54,7 @@ async function burnSubtitles(
   console.log("subtitlePath", subtitlePath)
   console.log("videoPath", tmpDir)
   
-  const ffmpeg_command = `ffmpeg -y -i "${videoPath.replace(/\\/g, '/')}" -vf "ass='${subtitlePath.replace(/\\/g, '/').replace(/:/g, '\\:')}'" -c:v libx264 -preset slow -crf 18 -c:a copy "${outputVideoPath.replace(/\\/g, '/')}"`
+  const ffmpeg_command = `ffmpeg -y -i "${videoPath.replace(/\\/g, '/')}" -vf "ass='${subtitlePath.replace(/\\/g, '/').replace(/:/g, '\\:')}'" -c:v libx264 -preset fast -crf 18 -threads 0 -c:a copy "${outputVideoPath.replace(/\\/g, '/')}"`
   console.log("ffmpeg_command", ffmpeg_command)
   await execAsync(
     ffmpeg_command

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Slider } from "@/components/ui/slider"
 import {
   faUpload,
   faSpinner,
@@ -94,12 +95,14 @@ const VideoUpload = ({
   const [showTranscriptionModal, setShowTranscriptionModal] = useState(false);
   const textEditorRef = useRef<HTMLTextAreaElement>(null);
   const videoComponentRef = useRef<HTMLDivElement>(null);
+  
+  // Add new state for font size range
+  const [fontSizeRange, setFontSizeRange] = useState({ min: 15, max: 64 });
 
   // Add new state for pre-selected videos
   const [videoSrc, setVideoSrc] = useState<string | null>(
     initialVideoSrc || null
   );
-  const [isProcessingPreselected, setIsProcessingPreselected] = useState(false);
 
   // Add a ref for the video element
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -111,8 +114,7 @@ const VideoUpload = ({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
 
-  // Add new state for video key
-  const [videoKey, setVideoKey] = useState<string>(Date.now().toString());
+
 
   // Modify useEffect to handle pre-selected videos
   useEffect(() => {
@@ -234,23 +236,6 @@ const VideoUpload = ({
       .join(' ');
     setTranscription(updatedTranscription);
   };
-
-  // Add useEffect to handle video source changes
-  useEffect(() => {
-    // Force video element to reload when subtitledVideoUrl changes
-    if (subtitledVideoUrl) {
-      setVideoKey(Date.now().toString());
-      
-      // Reset video state
-      setIsPlaying(false);
-      setCurrentTime(0);
-      
-      // Force reload if needed
-      if (videoRef.current) {
-        videoRef.current.load();
-      }
-    }
-  }, [subtitledVideoUrl]);
 
   const handleGenerateSubtitles = async () => {
     if (!audioUrl || !transcription) return;
@@ -455,6 +440,19 @@ const VideoUpload = ({
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
+      
+      // Calculate font size range based on video dimensions
+      const videoWidth = videoRef.current.videoWidth;
+      const videoHeight = videoRef.current.videoHeight;
+      
+      // Use width as the primary dimension for scaling
+      // For a 640px width video, we use 15px min and 64px max as reference
+      const minFontSize = Math.round((videoWidth / 640) * 15);
+      const maxFontSize = Math.round((videoWidth / 640) * 64);
+      
+      setFontSizeRange({ min: minFontSize, max: maxFontSize });
+      
+      setSubtitleSize(Math.round((minFontSize+maxFontSize)/2));
     }
   };
 
@@ -530,7 +528,6 @@ const VideoUpload = ({
                       {/* Video container */}
                       <div className="aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg border border-gray-800">
                         <video
-                          key={videoKey}
                           ref={videoRef}
                           src={subtitledVideoUrl || videoPreview}
                           className="w-full h-full"
@@ -663,17 +660,41 @@ const VideoUpload = ({
                               {subtitleSize}px
                             </span>
                           </div>
-                          <input
-                            type="range"
-                            min="15"
-                            max="64"
-                            step="0.5"
-                            value={subtitleSize}
-                            onChange={(e) =>
-                              setSubtitleSize(Number(e.target.value))
-                            }
-                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                          <Slider
+                            defaultValue={[subtitleSize]}
+                            min={fontSizeRange.min}
+                            max={fontSizeRange.max}
+                            step={1}
+                            onValueCommit={(values) => {
+                              console.log(values);
+                              setSubtitleSize(values[0]);
+                            }}
+                            className="w-full custom-slider"
                           />
+                          <style jsx global>{`
+                            .custom-slider [data-orientation="horizontal"] {
+                              height: 4px;
+                              width: 100%;
+                              background: #374151;
+                              border-radius: 9999px;
+                            }
+                            
+                            .custom-slider [role="slider"] {
+                              display: block;
+                              width: 20px;
+                              height: 20px;
+                              background-color: white;
+                              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                              border-radius: 9999px;
+                              cursor: pointer;
+                            }
+
+                            .custom-slider [data-orientation="horizontal"] > span {
+                              height: 100%;
+                              background: linear-gradient(90deg, #6366f1, #8b5cf6);
+                              border-radius: 9999px;
+                            }
+                          `}</style>
                         </div>
 
                         {/* Desktop Subtitle Customizer */}

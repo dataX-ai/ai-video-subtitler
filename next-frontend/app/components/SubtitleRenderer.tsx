@@ -125,7 +125,7 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
         octopusRef.current = null;
       }
     };
-  }, [assContent, videoRef, visible]);
+  }, [assContent, visible, videoRef]);
 
   // If component is not visible, don't render anything
   if (!visible) {
