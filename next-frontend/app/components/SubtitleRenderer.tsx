@@ -66,7 +66,7 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
           octopusRef.current.setTrack(content);
         }
         else {setAssContent(content);}
-        // console.log("ASS subtitle content generated successfully", assContent);
+        console.log("ASS subtitle content generated successfully", assContent);
       } catch (err) {
         console.error("Error generating ASS subtitle content:", err);
         setError("Failed to generate subtitle content");
