@@ -141,6 +141,8 @@ export async function generateAssContent(
   videoWidth: number,
   videoHeight: number
 ): Promise<string> {
+  const startTime = performance.now();
+  
   // Convert colors from hex to ASS format
   const primaryColor = hexToAssColor(style.colors.line1.text);
   const backgroundColor = hexToAssColor(style.colors.line1.background);
@@ -220,6 +222,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     // Layer 1: The actual text using the same centering
     
   };
+  
+  const endTime = performance.now();
+  const elapsedTime = endTime - startTime;
+  console.log(`generateAssContent execution time: ${elapsedTime.toFixed(2)}ms`);
   
   return assContent;
 }
