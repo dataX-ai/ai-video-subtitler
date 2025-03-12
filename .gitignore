@@ -125,3 +125,6 @@ service-account.json
 deploy-app.sh
 
 data/
+
+frontend.env
+backend.env

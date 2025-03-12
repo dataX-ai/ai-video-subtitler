@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import VideoUpload from "./components/VideoUpload";
 import { FaPlay, FaUpload, FaSpinner } from "react-icons/fa";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faVideo } from "@fortawesome/free-solid-svg-icons";
+import { TranscriptionSegment } from "./components/VideoUpload";
 
 // Sample videos from public folder
 const sampleVideos = [
@@ -44,9 +47,63 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showVideoUpload, setShowVideoUpload] = useState(false);
   const [videosMissing, setVideosMissing] = useState(false);
+  const [isHandlingVideoSelection, setIsHandlingVideoSelection] = useState(false);
+
+  // Add a ref to track if we've already made an API call
+  const hasCalledApiRef = useRef(false);
+  
+  // Move useCallback to the top level of the component
+  const handleUpload = useCallback(async (
+    file: File,
+    setTranscription: (transcription: string) => void,
+    setIsTranscribing: (isTranscribing: boolean) => void,
+    setAudioUrl: (url: string) => void,
+    setUniqueId: (id: string) => void,
+    setSegments: (segments: TranscriptionSegment[]) => void
+  ) => {
+    // Prevent duplicate API calls with a ref
+    if (file && !hasCalledApiRef.current) {
+      hasCalledApiRef.current = true;
+
+      const formData = new FormData();
+      formData.append("video", file);
+
+      try {
+        setIsTranscribing(true);
+        const response = await fetch("/api/transcribe", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await response.json();
+
+        if (data.transcription && data.audioUrl && data.uniqueId) {
+          setTranscription(data.transcription);
+          setAudioUrl(data.audioUrl);
+          setUniqueId(data.uniqueId);
+          
+          // Handle segments if they exist in the response
+          if (data.segments && Array.isArray(data.segments)) {
+            setSegments(data.segments);
+          }
+        } else if (data.error) {
+          console.error("Transcription error:", data.error);
+        }
+      } catch (error) {
+        console.error("Error uploading video:", error);
+      } finally {
+        setIsTranscribing(false);
+        hasCalledApiRef.current = false;
+      }
+    } else {
+      console.log("Preventing duplicate API call");
+    }
+  }, []);
 
   // Handle sample video selection
   const handleSampleVideoSelect = async (videoSrc: string, index: number) => {
+    if (isHandlingVideoSelection) return;
+    setIsHandlingVideoSelection(true);
+    
     console.log("Selected sample video:", videoSrc);
 
     try {
@@ -75,14 +132,19 @@ export default function Home() {
       // Delay showing the VideoUpload component to prevent UI flash
       setTimeout(() => {
         setShowVideoUpload(true);
+        setIsHandlingVideoSelection(false);
       }, 100);
     } catch (error) {
       console.error("Error fetching sample video:", error);
+      setIsHandlingVideoSelection(false);
     }
   };
 
   // Handle file upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isHandlingVideoSelection) return;
+    setIsHandlingVideoSelection(true);
+    
     const file = e.target.files?.[0];
     if (file) {
       const fileUrl = URL.createObjectURL(file);
@@ -93,7 +155,10 @@ export default function Home() {
       // Delay showing the VideoUpload component to prevent UI flash
       setTimeout(() => {
         setShowVideoUpload(true);
+        setIsHandlingVideoSelection(false);
       }, 100);
+    } else {
+      setIsHandlingVideoSelection(false);
     }
   };
 
@@ -182,44 +247,21 @@ export default function Home() {
     };
   }, []);
 
-  // If a video is selected and we're ready to show the VideoUpload component
+  const handleRemoveVideo = () => {
+    setShowVideoUpload(false);
+    setSelectedVideo(null);
+    setSelectedFile(null);
+    setIsUploadedVideo(false);
+  };
+
   if (showVideoUpload && selectedVideo && selectedFile) {
     return (
       <VideoUpload
         initialVideoSrc={selectedVideo}
         initialVideoFile={selectedFile}
         isPreselectedVideo={!isUploadedVideo}
-        onUpload={async (
-          file: File,
-          setTranscription: (text: string) => void,
-          setIsTranscribing: (value: boolean) => void,
-          setAudioUrl: (url: string) => void,
-          setUniqueId: (id: string) => void
-        ) => {
-          const formData = new FormData();
-          formData.append("video", file);
-
-          try {
-            setIsTranscribing(true);
-            const response = await fetch("/api/transcribe", {
-              method: "POST",
-              body: formData,
-            });
-            const data = await response.json();
-
-            if (data.transcription && data.audioUrl && data.uniqueId) {
-              setTranscription(data.transcription);
-              setAudioUrl(data.audioUrl);
-              setUniqueId(data.uniqueId);
-            } else if (data.error) {
-              console.error("Transcription error:", data.error);
-            }
-          } catch (error) {
-            console.error("Error uploading video:", error);
-          } finally {
-            setIsTranscribing(false);
-          }
-        }}
+        onUpload={handleUpload}
+        onRemove={handleRemoveVideo}
       />
     );
   }

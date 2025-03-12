@@ -15,8 +15,9 @@ FROM node:20-alpine
 ARG AI_BACKEND_URL
 ENV AI_BACKEND_URL=${AI_BACKEND_URL}
 
-# Install ffmpeg and create database directory
-RUN apk add --no-cache ffmpeg && \
+# Install ffmpeg, fonts, and create database directory
+RUN apk add --no-cache ffmpeg fontconfig font-liberation ttf-liberation font-noto font-noto-extra && \
+    fc-cache -f -v && \
     mkdir -p /app/database
 
 WORKDIR /app
