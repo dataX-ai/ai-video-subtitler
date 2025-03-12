@@ -17,6 +17,11 @@ import {
   faFileAlt,
   faMicrophone,
   faDownload,
+  faPlay,
+  faPause,
+  faExpand,
+  faVolumeUp,
+  faVolumeMute,
 } from "@fortawesome/free-solid-svg-icons";
 import React from "react";
 import { ChromePicker, ColorResult } from "react-color";
@@ -114,6 +119,13 @@ const VideoUpload = ({
   
   // Add state to control subtitle renderer visibility
   const [showSubtitlePreview, setShowSubtitlePreview] = useState(true);
+
+  // Add states for custom video controls
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
 
   // Modify useEffect to handle pre-selected videos
   useEffect(() => {
@@ -442,6 +454,100 @@ const VideoUpload = ({
     fontSize: subtitleSize
   };
 
+  // We need to keep the basic video time update event listener
+  useEffect(() => {
+    if (videoRef.current) {
+      const videoElement = videoRef.current;
+      
+      const handleTimeUpdate = () => {
+        setCurrentTime(videoElement.currentTime);
+      };
+      
+      const handleDurationChange = () => {
+        setDuration(videoElement.duration);
+      };
+      
+      const handlePlay = () => {
+        setIsPlaying(true);
+      };
+      
+      const handlePause = () => {
+        setIsPlaying(false);
+      };
+      
+      const handleEnded = () => {
+        setIsPlaying(false);
+      };
+      
+      // Add event listeners
+      videoElement.addEventListener('timeupdate', handleTimeUpdate);
+      videoElement.addEventListener('durationchange', handleDurationChange);
+      videoElement.addEventListener('play', handlePlay);
+      videoElement.addEventListener('pause', handlePause);
+      videoElement.addEventListener('ended', handleEnded);
+      
+      // Remove event listeners on cleanup
+      return () => {
+        videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+        videoElement.removeEventListener('durationchange', handleDurationChange);
+        videoElement.removeEventListener('play', handlePlay);
+        videoElement.removeEventListener('pause', handlePause);
+        videoElement.removeEventListener('ended', handleEnded);
+      };
+    }
+  }, []);
+
+  // Simple handle seek function for the input range
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (videoRef.current) {
+      const newTime = parseFloat(e.target.value);
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
+  // Format time function - make it more precise
+  const formatVideoTime = (timeInSeconds: number) => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+  
+  // Custom control handlers
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+    }
+  };
+  
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+  
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (videoRef.current) {
+      const newVolume = parseFloat(e.target.value);
+      videoRef.current.volume = newVolume;
+      setVolume(newVolume);
+      setIsMuted(newVolume === 0);
+    }
+  };
+  
+  const requestFullscreen = () => {
+    if (videoRef.current) {
+      if (videoRef.current.requestFullscreen) {
+        videoRef.current.requestFullscreen();
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -505,22 +611,71 @@ const VideoUpload = ({
                       Video Preview
                     </h2>
 
-                    <div className="aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg border border-gray-800">
-                      <video
-                        key={videoPreview}
-                        ref={videoRef}
-                        src={subtitledVideoUrl || videoPreview}
-                        className="w-full h-full"
-                        controls
-                        controlsList="nodownload"
-                      />
-                      <SubtitleRenderer
-                        videoRef={videoRef}
-                        segments={segments}
-                        subtitleStyle={subtitleStyle}
-                        visible={true}
-                      />
-
+                    <div className="flex flex-col">
+                      {/* Video container - without gap to controls */}
+                      <div className="aspect-video bg-black rounded-t-xl overflow-hidden relative shadow-lg border border-gray-800 border-b-0">
+                        <video
+                          key={videoPreview}
+                          ref={videoRef}
+                          src={subtitledVideoUrl || videoPreview}
+                          className="w-full h-full"
+                        />
+                        <SubtitleRenderer
+                          videoRef={videoRef}
+                          segments={segments}
+                          subtitleStyle={subtitleStyle}
+                          visible={!subtitledVideoUrl}
+                        />
+                      </div>
+                      
+                      {/* Video Controls - attached directly to video */}
+                      <div className="bg-gray-900 rounded-b-xl border border-gray-800">
+                        {/* Simpler input range with better granularity */}
+                        <input
+                          type="range"
+                          min="0"
+                          max={duration || 0}
+                          step="0.01"
+                          value={currentTime || 0}
+                          onChange={handleSeek}
+                          className="w-full h-2 bg-gray-700 appearance-none cursor-pointer accent-indigo-500 outline-none rounded-none"
+                        />
+                        
+                        {/* Controls Bar */}
+                        <div className="flex items-center justify-between px-3 py-2">
+                          {/* Left Controls */}
+                          <div className="flex items-center space-x-4">
+                            {/* Play/Pause Button */}
+                            <button onClick={togglePlay} className="text-white hover:text-indigo-400 transition-colors">
+                              <FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />
+                            </button>
+                            
+                            {/* Time Display */}
+                            <div className="text-white text-sm">
+                              {formatVideoTime(currentTime)} / {formatVideoTime(duration)}
+                            </div>
+                          </div>
+                          
+                          {/* Right Controls */}
+                          <div className="flex items-center space-x-4">
+                            {/* Volume Control */}
+                            <div className="flex items-center space-x-2">
+                              <button onClick={toggleMute} className="text-white hover:text-indigo-400 transition-colors">
+                                <FontAwesomeIcon icon={isMuted ? faVolumeMute : faVolumeUp} />
+                              </button>
+                              <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={volume}
+                                onChange={handleVolumeChange}
+                                className="w-16 h-1 bg-gray-600 appearance-none cursor-pointer accent-indigo-500 outline-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-4">
