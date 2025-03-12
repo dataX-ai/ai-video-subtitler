@@ -42,21 +42,22 @@ async function burnSubtitles(
     colors: subtitleColors,
     fontSize: subtitleSize
   }
-  const assContent = generateAssContent(
+  const assContent = await generateAssContent(
     segments,
     subtitleStyle,
     width,
     height
   )
-
+  console.log("assContent", assContent)
   // Write subtitle file
   await writeFileAsync(subtitlePath, assContent)
   console.log("subtitlePath", subtitlePath)
   console.log("videoPath", tmpDir)
   
-  // Update the ffmpeg command to use ass filter instead of subtitles filter
+  const ffmpeg_command = `ffmpeg -y -i "${videoPath.replace(/\\/g, '/')}" -vf "ass='${subtitlePath.replace(/\\/g, '/').replace(/:/g, '\\:')}'" -c:v libx264 -preset slow -crf 18 -c:a copy "${outputVideoPath.replace(/\\/g, '/')}"`
+  console.log("ffmpeg_command", ffmpeg_command)
   await execAsync(
-    `ffmpeg -y -i "${videoPath.replace(/\\/g, '/')}" -vf "ass='${subtitlePath.replace(/\\/g, '/').replace(/:/g, '\\:')}'" -c:v libx264 -preset slow -crf 18 -c:a copy "${outputVideoPath.replace(/\\/g, '/')}"`
+    ffmpeg_command
   )
   
   // Upload to GCS
@@ -105,13 +106,19 @@ export async function POST(req: NextRequest) {
     console.log(audioUrl)
     console.log(transcription)
     console.log(segments)
-
+    console.log(subtitleFont)
+    console.log(subtitlePosition)
+    console.log(subtitleColors)
+    console.log(subtitleSize)
+    
     if (!video || !transcription) {
       return NextResponse.json({ error: "Video and transcription are required" }, { status: 400 })
     }
 
-    // Upload the original video to GCS
-    const videoUrl = await uploadToGCS(video, "video", uniqueId)
+
+    const uploadPromise = uploadToGCS(video, "video", uniqueId)
+    uploadPromise.catch(err => console.error("Background upload of original video failed:", err))
+    console.log("Original Video - Uploaded Job started: ", uniqueId)
     
     // Save the video to a temporary file
     const tmpDir = path.join(os.tmpdir(), uniqueId)

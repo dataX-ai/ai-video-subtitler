@@ -1,0 +1,10 @@
+services:
+  frontend:
+    image: ai-subtitler-frontend:latest
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend.env
+    volumes:
+      - /Users/kanishka/Not_Work/Projects/AI-Subtitles/ai-video-subtitler/next-frontend/service-account.json:/app/credentials/service-account.json
+    restart: unless-stopped

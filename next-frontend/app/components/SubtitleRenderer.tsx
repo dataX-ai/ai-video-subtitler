@@ -28,29 +28,33 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
   useEffect(() => {
     if (!videoRef.current || segments.length === 0) return;
     
-    try {
-      const video = videoRef.current;
-      const videoWidth = video.videoWidth || 640;
-      const videoHeight = video.videoHeight || 360;
-      
-      console.log(`Generating ASS for video dimensions: ${videoWidth}x${videoHeight}`);
-      
-      // Generate ASS content
-      const content = generateAssContent(
-        segments,
-        subtitleStyle,
-        videoWidth,
-        videoHeight
-      );
-      if (octopusRef.current) {
-        octopusRef.current.setTrack(content);
+    const generateSubtitles = async () => {
+      try {
+        const video = videoRef.current;
+        const videoWidth = video.videoWidth || 640;
+        const videoHeight = video.videoHeight || 360;
+        
+        console.log(`Generating ASS for video dimensions: ${videoWidth}x${videoHeight}`);
+        
+        // Generate ASS content
+        const content = await generateAssContent(
+          segments,
+          subtitleStyle,
+          videoWidth,
+          videoHeight
+        );
+        if (octopusRef.current) {
+          octopusRef.current.setTrack(content);
+        }
+        else {setAssContent(content);}
+        console.log("ASS subtitle content generated successfully", assContent);
+      } catch (err) {
+        console.error("Error generating ASS subtitle content:", err);
+        setError("Failed to generate subtitle content");
       }
-      else {setAssContent(content);}
-      console.log("ASS subtitle content generated successfully", assContent);
-    } catch (err) {
-      console.error("Error generating ASS subtitle content:", err);
-      setError("Failed to generate subtitle content");
-    }
+    };
+    
+    generateSubtitles();
   }, [segments, subtitleStyle, videoRef]);
 
   // Initialize or update SubtitlesOctopus when ASS content changes
