@@ -6,6 +6,15 @@ WORKDIR /app
 COPY package*.json .
 RUN npm install
 
+# Delete existing files in libass-wasm dist directory and copy our custom files
+RUN rm -rf node_modules/libass-wasm/dist/js/* && \
+    mkdir -p node_modules/libass-wasm/dist/js
+COPY public/js/libass/subtitles-octopus-worker-legacy.js node_modules/libass-wasm/dist/js/
+COPY public/js/libass/subtitles-octopus-worker.js node_modules/libass-wasm/dist/js/
+COPY public/js/libass/subtitles-octopus-worker.wasm node_modules/libass-wasm/dist/js/
+COPY public/js/libass/subtitles-octopus.js node_modules/libass-wasm/dist/js/
+COPY public/js/libass/COPYRIGHT node_modules/libass-wasm/dist/js/
+
 COPY . .
 RUN npm run build
 
@@ -27,6 +36,8 @@ COPY --from=builder /app/package.json .
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+
+
 
 # Set permissions for the database directory
 RUN chown -R node:node /app/database && \
