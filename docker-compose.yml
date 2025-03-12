@@ -8,24 +8,4 @@ services:
     volumes:
       - /home/azureuser/service-account-credentials/service-account.json:/app/credentials/service-account.json
       - /home/azureuser/database:/app/database
-    depends_on:
-      - backend
-    networks:
-      - app-network
     restart: unless-stopped
-
-  backend:
-    image: ateulerlabs/ai-subtitler-backend:latest
-    ports:
-      - "5007:5007"
-    volumes:
-      - /home/azureuser/service-account-credentials/service-account.json:/app/credentials/service-account.json
-    env_file:
-      - /home/azureuser/backend.env
-    networks:
-      - app-network
-    restart: unless-stopped
-
-networks:
-  app-network:
-    driver: bridge 
