@@ -27,8 +27,7 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
   font,
   fontSize,
   position,
-  colors,
-  visible = true
+  colors
 }) => {
   const octopusRef = useRef<any>(null);
   const [assContent, setAssContent] = useState<string>("");
@@ -80,7 +79,7 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
 
   // Initialize or update SubtitlesOctopus when ASS content changes
   useEffect(() => {
-    if (!videoRef.current || !visible) return;
+    if (!videoRef.current) return;
     console.log(`Debug videoRef`);
     // Function to initialize SubtitlesOctopus
     const initializeOctopus = async () => {
@@ -118,7 +117,7 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
         
         // Create new instance - let the library create its own canvas
         octopusRef.current = new SubtitlesOctopus({
-          video: videoObj,
+          video: videoObj!,
           subContent: content,
           workerUrl: '/js/libass/subtitles-octopus-worker.js',
           legacyWorkerUrl: '/js/libass/subtitles-octopus-worker-legacy.js',
@@ -173,10 +172,10 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
         octopusRef.current = null;
       }
     };
-  }, [videoRef, visible]);
+  }, [videoRef]);
 
   // If component is not visible, don't render anything
-  if (!visible) {
+  if (!videoRef || !videoRef.current) {
     return null;
   }
 
