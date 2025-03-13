@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import VideoUpload from "./components/VideoUpload";
 import { FaPlay, FaUpload, FaSpinner } from "react-icons/fa";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faVideo } from "@fortawesome/free-solid-svg-icons";
 import { TranscriptionSegment } from "./components/VideoUpload";
 
 // Sample videos from public folder
