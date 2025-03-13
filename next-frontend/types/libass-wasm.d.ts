@@ -7,7 +7,10 @@ declare module 'libass-wasm' {
       fonts?: string[];
       workerUrl: string;
       legacyWorkerUrl?: string;
-      canvas: HTMLCanvasElement;
+      availableFonts?: {
+        [key: string]: string;
+      };
+      fallbackFont?: string;
       onReady?: () => void;
       onError?: (error: any) => void;
       debug?: boolean;

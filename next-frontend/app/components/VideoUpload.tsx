@@ -22,6 +22,7 @@ import {
   faPause,
   faVolumeUp,
   faVolumeMute,
+  faRedo,
 } from "@fortawesome/free-solid-svg-icons";
 import React from "react";
 import { ChromePicker, ColorResult } from "react-color";
@@ -74,12 +75,9 @@ const VideoUpload = ({
   const [segments, setSegments] = useState<TranscriptionSegment[]>([]);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
-  const [isGeneratingSubtitles, setIsGeneratingSubtitles] = useState(false);
+  const [isExportingVideo, setIsExportingVideo] = useState(false);
   const [audioUrl, setAudioUrl] = useState("");
   const [uniqueId, setUniqueId] = useState("");
-  const [subtitledVideoUrl, setSubtitledVideoUrl] = useState<string | null>(
-    null
-  );
   const [subtitleColors, setSubtitleColors] = useState<SubtitleColors>({
     line1: {
       text: "#FFFFFF",
@@ -113,6 +111,7 @@ const VideoUpload = ({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
 
 
 
@@ -170,14 +169,11 @@ const VideoUpload = ({
       if (videoPreview) {
         URL.revokeObjectURL(videoPreview);
       }
-      if (subtitledVideoUrl) {
-        setSubtitledVideoUrl(null);
-      }
 
       // Reset states for new video
       setTranscription("");
       setIsTranscribing(false);
-      setIsGeneratingSubtitles(false);
+      setIsExportingVideo(false);
       setAudioUrl("");
 
       // Create a URL for the new video preview
@@ -237,20 +233,11 @@ const VideoUpload = ({
     setTranscription(updatedTranscription);
   };
 
-  const handleGenerateSubtitles = async () => {
+  const handleExportVideo = async () => {
     if (!audioUrl || !transcription) return;
 
     try {
-      setIsGeneratingSubtitles(true);
-
-      // Get video dimensions for positioning
-      const videoElement = document.querySelector("video");
-      const videoRect = videoElement?.getBoundingClientRect();
-
-      if (!videoRect) {
-        console.error("Could not get video dimensions");
-        return;
-      }
+      setIsExportingVideo(true);
 
       const formData = new FormData();
       formData.append('video', currentFile!);
@@ -269,24 +256,35 @@ const VideoUpload = ({
       });
 
       const data = await response.json();
+      setIsExportingVideo(false);
 
       if (data.subtitledVideoUrl) {
-        setSubtitledVideoUrl(null);
-        setSubtitledVideoUrl(data.subtitledVideoUrl);
-        // Scroll to video component after subtitle generation
-        setTimeout(() => {
-          videoComponentRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        }, 1000);
+        // Create a download link for the subtitled video
+        const downloadVideo = () => {
+          // Create a temporary anchor element
+          const downloadLink = document.createElement('a');
+          downloadLink.href = data.subtitledVideoUrl as string;
+          
+          // Set the download attribute with a suggested filename
+          downloadLink.download = 'subtitled-video.mp4';
+          
+          // Add target="_blank" to open in a new tab
+          downloadLink.target = "_blank";
+          
+          // Append to the body, click programmatically, and clean up
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+        };
+        
+        // Trigger the download
+        downloadVideo();
       } else {
         console.error("Failed to generate subtitles");
       }
     } catch (error) {
       console.error("Error generating subtitles:", error);
-    } finally {
-      setIsGeneratingSubtitles(false);
+      setIsExportingVideo(false);
     }
   };
 
@@ -298,9 +296,8 @@ const VideoUpload = ({
     setCurrentFile(null);
     setTranscription("");
     setIsTranscribing(false);
-    setIsGeneratingSubtitles(false);
+    setIsExportingVideo(false);
     setAudioUrl("");
-    setSubtitledVideoUrl(null);
     setSubtitlePosition({ y: 3 });
     
     // Call the onRemove callback to notify parent
@@ -317,58 +314,6 @@ const VideoUpload = ({
       }
     };
   }, [videoPreview]);
-
-  // Modify the handleDownload function to handle both local and external URLs
-  const handleDownload = async () => {
-    const videoUrl = subtitledVideoUrl || videoPreview;
-    if (!videoUrl) return;
-
-    try {
-      let blob;
-
-      if (subtitledVideoUrl) {
-        // For subtitled video, use our backend API to handle the download
-        const response = await fetch("/api/download-video", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ videoUrl: subtitledVideoUrl }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to download video");
-        }
-
-        blob = await response.blob();
-      } else {
-        // For original video (local URL), use simple fetch
-        const response = await fetch(videoUrl);
-        blob = await response.blob();
-      }
-
-      // Create a temporary link element
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-
-      // Set suggested filename based on whether it's subtitled or original
-      const filename = subtitledVideoUrl
-        ? "subtitled-video.mp4"
-        : "original-video.mp4";
-      link.download = filename;
-
-      // Append to body, click and remove
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Clean up the URL
-      window.URL.revokeObjectURL(link.href);
-    } catch (error) {
-      console.error("Error downloading video:", error);
-      alert("Failed to download video. Please try again.");
-    }
-  };
 
   // Create a subtitle style object from the current settings
   const subtitleStyle: SubtitleStyle = {
@@ -461,6 +406,14 @@ const VideoUpload = ({
     setIsPlaying(false);
   };
 
+  // Handle loop toggle
+  const toggleLoop = () => {
+    if (videoRef.current) {
+      videoRef.current.loop = !isLooping;
+      setIsLooping(!isLooping);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -529,11 +482,12 @@ const VideoUpload = ({
                       <div className="aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg border border-gray-800">
                         <video
                           ref={videoRef}
-                          src={subtitledVideoUrl || videoPreview}
+                          src={videoPreview}
                           className="w-full h-full"
                           onTimeUpdate={handleTimeUpdate}
                           onLoadedMetadata={handleLoadedMetadata}
                           onEnded={handleVideoEnded}
+                          loop={isLooping}
                         />
                         <SubtitleRenderer
                           videoRef={videoRef}
@@ -542,7 +496,6 @@ const VideoUpload = ({
                           fontSize={subtitleSize}
                           position={subtitlePosition}
                           colors={subtitleColors}
-                          visible={!subtitledVideoUrl}
                         />
                       </div>
                       
@@ -594,6 +547,23 @@ const VideoUpload = ({
                                 />
                               </div>
                             </div>
+                            
+                            {/* Right-side controls */}
+                            <div className="flex items-center">
+                              {/* Loop toggle button */}
+                              <button 
+                                onClick={toggleLoop}
+                                className={`flex items-center gap-1 px-2 py-1 rounded transition-all border ${
+                                  isLooping 
+                                    ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' 
+                                    : 'text-white hover:text-indigo-400 border-transparent'
+                                }`}
+                                title={isLooping ? "Loop enabled" : "Loop disabled"}
+                              >
+                                <FontAwesomeIcon icon={faRedo} className="text-lg" />
+                                <span className="text-xs font-medium">{isLooping ? "ON" : "OFF"}</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -620,19 +590,6 @@ const VideoUpload = ({
                           onChange={handleFileChange}
                         />
                       </label>
-                      {/* Only show download button when subtitled video is available */}
-                      {subtitledVideoUrl && (
-                        <button
-                          onClick={handleDownload}
-                          className="flex items-center justify-center gap-2 px-5 py-3 bg-[#162521] hover:bg-[#1C312A] text-green-400 rounded-xl transition-all duration-300 font-medium border border-green-500/20 shadow-lg shadow-green-500/5"
-                        >
-                          <FontAwesomeIcon
-                            icon={faDownload}
-                            className="text-sm"
-                          />
-                          <span>Download</span>
-                        </button>
-                      )}
                     </div>
                   </div>
 
@@ -820,23 +777,23 @@ const VideoUpload = ({
                     {transcription && !isTranscribing && (
                       <div className="flex justify-end mt-6">
                         <button
-                          onClick={handleGenerateSubtitles}
-                          disabled={isGeneratingSubtitles}
+                          onClick={handleExportVideo}
+                          disabled={isExportingVideo}
                           className={`px-6 py-3 md:px-8 md:py-3.5 rounded-lg transition-all duration-300 flex items-center gap-3 text-base md:text-lg font-medium shadow-lg ${
-                            isGeneratingSubtitles
+                            isExportingVideo
                               ? "bg-gradient-to-r from-green-500/70 to-emerald-600/70 text-white/80 cursor-not-allowed"
                               : "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-green-500/20"
                           }`}
                         >
-                          {isGeneratingSubtitles ? (
+                          {isExportingVideo ? (
                             <>
                               <div className="animate-spin rounded-full h-5 w-5 border-3 border-white border-t-transparent"></div>
-                              <span>Generating Subtitles...</span>
+                              <span>Exporting Video...</span>
                             </>
                           ) : (
                             <>
                               <FontAwesomeIcon icon={faCheck} />
-                              Generate Subtitles
+                              Export Video
                             </>
                           )}
                         </button>
@@ -849,7 +806,7 @@ const VideoUpload = ({
           )}
 
           {/* Loading Overlay */}
-          {isGeneratingSubtitles && (
+          {isExportingVideo && (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
               <div className="bg-gradient-to-b from-gray-900 to-gray-950 rounded-xl p-8 flex flex-col items-center gap-5 max-w-md mx-4 border border-indigo-800/30 shadow-2xl">
                 <div className="animate-spin rounded-full h-14 w-14 border-4 border-green-500 border-t-transparent"></div>
