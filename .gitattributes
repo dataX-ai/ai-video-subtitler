@@ -1,0 +1,62 @@
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# JavaScript/TypeScript files
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+
+# Next.js specific files
+next.config.js text eol=lf
+next-env.d.ts text eol=lf
+
+# GitHub Actions
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Docker files
+Dockerfile text eol=lf
+docker-compose.yml text eol=lf
+docker-compose.yaml text eol=lf
+*.dockerignore text eol=lf
+
+# Font files (binary)
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+
+# Image files (binary)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text
+
+# Future file types
+# Python
+*.py text eol=lf
+*.pyc binary
+requirements.txt text eol=lf
+
+# C++
+*.cpp text eol=lf
+*.hpp text eol=lf
+*.h text eol=lf
+*.c text eol=lf
+
+# Config files
+.env text eol=lf
+.env.* text eol=lf
+*.config text eol=lf
+.babelrc text eol=lf
+.eslintrc text eol=lf
+.prettierrc text eol=lf 

@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { PostHogProvider } from "./providers";
 import { HighlightInit } from "@highlight-run/next/client";
 import Footer from "./components/Footer";
 import { Inter } from "next/font/google";
@@ -66,12 +65,10 @@ export default function RootLayout({
       />
       <html lang="en">
         <body className={inter.className}>
-          <PostHogProvider>
             <main className="flex-grow bg-gradient-to-b from-[#0B1120] to-[#0B1120]/90">
               {children}
             </main>
             <Footer />
-          </PostHogProvider>
         </body>
       </html>
     </>

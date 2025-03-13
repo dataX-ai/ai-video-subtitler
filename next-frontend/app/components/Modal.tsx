@@ -22,4 +22,4 @@ const Modal = ({ isOpen, message }: ModalProps) => {
   );
 };
 
-export default Modal; 
+export default Modal;
