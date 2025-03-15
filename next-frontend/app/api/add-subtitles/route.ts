@@ -1,11 +1,13 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { exec } from "child_process"
 import { promisify } from "util"
 import { uploadToGCS } from "../../utils/storage"
 import { generateAssContent, SubtitleStyle } from "../../utils/subtitle-utils"
+import { H } from '@/lib/highlight';
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import { collectMetrics } from "../../utils/decorators"
 
 const execAsync = promisify(exec)
 const writeFileAsync = promisify(fs.writeFile)
@@ -88,65 +90,62 @@ async function burnSubtitles(
   return outputUrl
 }
 
-export async function POST(req: NextRequest) {
-  console.log("Headers:", Object.fromEntries(req.headers))
+class SubtitleRouteHandler {
+  @collectMetrics()
+  static async POST(req: NextRequest) {
+    console.log("Headers:", Object.fromEntries(req.headers))
+    
+    try {
+      const parsed = H.parseHeaders(req.headers);
   
-  try {
-    const formData = await req.formData()
-    const video = formData.get("video") as File
-    const audioUrl = formData.get("audioUrl") as string
-    const transcription = formData.get("transcription") as string
-    const segments = JSON.parse(formData.get("segments") as string)
-    const uniqueId = formData.get("uniqueId") as string
-    const subtitleFont = formData.get("subtitleFont") as string
-    const subtitlePosition = JSON.parse(formData.get("subtitlePosition") as string)
-    const subtitleColors = JSON.parse(formData.get("subtitleColors") as string)
-    const subtitleSize = parseInt(formData.get("subtitleSize") as string)
-    console.log(video)
-    console.log(audioUrl)
-    console.log(transcription)
-    console.log(segments)
-    console.log(subtitleFont)
-    console.log(subtitlePosition)
-    console.log(subtitleColors)
-    console.log(subtitleSize)
-    
-    if (!video || !transcription) {
-      return NextResponse.json({ error: "Video and transcription are required" }, { status: 400 })
+      const formData = await req.formData()
+      const video = formData.get("video") as File
+      const audioUrl = formData.get("audioUrl") as string
+      const transcription = formData.get("transcription") as string
+      const segments = JSON.parse(formData.get("segments") as string)
+      const uniqueId = formData.get("uniqueId") as string
+      const subtitleFont = formData.get("subtitleFont") as string
+      const subtitlePosition = JSON.parse(formData.get("subtitlePosition") as string)
+      const subtitleColors = JSON.parse(formData.get("subtitleColors") as string)
+      const subtitleSize = parseInt(formData.get("subtitleSize") as string)
+
+      if (!video || !transcription) {
+        return NextResponse.json({ error: "Video and transcription are required" }, { status: 400 })
+      }
+
+      const uploadPromise = uploadToGCS(video, "video", uniqueId)
+      uploadPromise.catch(err => console.error("Background upload of original video failed:", err))
+      console.log("Original Video - Uploaded Job started: ", uniqueId)
+      
+      // Save the video to a temporary file
+      const tmpDir = path.join(os.tmpdir(), uniqueId)
+      fs.mkdirSync(tmpDir, { recursive: true })
+      const videoPath = path.join(tmpDir, `${uniqueId}_original.mp4`)
+      
+      // Convert File object to buffer and write to disk
+      const arrayBuffer = await video.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      await fs.promises.writeFile(videoPath, buffer)
+      
+      // Burn subtitles into the video
+      const subtitledVideoUrl = await burnSubtitles(
+        videoPath,
+        segments,
+        uniqueId,
+        subtitleFont,
+        subtitlePosition,
+        subtitleColors,
+        subtitleSize
+      )
+      
+      return NextResponse.json({ subtitledVideoUrl })
+    } catch (error) {
+      console.error("Error parsing form data:", error)
+      return NextResponse.json({ error: 'Invalid form data' }, { status: 400 })
     }
-
-
-    const uploadPromise = uploadToGCS(video, "video", uniqueId)
-    uploadPromise.catch(err => console.error("Background upload of original video failed:", err))
-    console.log("Original Video - Uploaded Job started: ", uniqueId)
-    
-    // Save the video to a temporary file
-    const tmpDir = path.join(os.tmpdir(), uniqueId)
-    fs.mkdirSync(tmpDir, { recursive: true })
-    const videoPath = path.join(tmpDir, `${uniqueId}_original.mp4`)
-    
-    // Convert File object to buffer and write to disk
-    const arrayBuffer = await video.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    await fs.promises.writeFile(videoPath, buffer)
-    
-    // Burn subtitles into the video
-    const subtitledVideoUrl = await burnSubtitles(
-      videoPath,
-      segments,
-      uniqueId,
-      subtitleFont,
-      subtitlePosition,
-      subtitleColors,
-      subtitleSize
-    )
-    
-    // Remove the cleanup code from here since it's already done in burnSubtitles
-    return NextResponse.json({ subtitledVideoUrl })
-  } catch (error) {
-    console.error("Error parsing form data:", error)
-    return NextResponse.json({ error: 'Invalid form data' }, { status: 400 })
   }
 }
+
+export const POST = SubtitleRouteHandler.POST;
 
 
