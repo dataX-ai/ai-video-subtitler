@@ -47,6 +47,11 @@ docker-compose.yaml text eol=lf
 *.pyc binary
 requirements.txt text eol=lf
 
+# Shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+
 # C++
 *.cpp text eol=lf
 *.hpp text eol=lf
