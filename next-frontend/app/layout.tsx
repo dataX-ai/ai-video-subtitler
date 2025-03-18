@@ -49,20 +49,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isProd = process.env.ENV === 'production';
+  const highlightProjectId = process.env.NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID;
+
   return (
     <>
-      <HighlightInit
-        projectId={process.env.NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID}
-        excludedHostnames={["localhost"]}
-        serviceName="subtitle-nextjs-frontend"
-        tracingOrigins
-        networkRecording={{
-          enabled: true,
-          recordHeadersAndBody: true,
-          urlBlocklist: [],
-        }}
-        debug
-      />
+      {highlightProjectId && isProd && (
+        <HighlightInit
+          projectId={highlightProjectId}
+          serviceName="subtitle-nextjs-frontend"
+          tracingOrigins
+          networkRecording={{
+            enabled: true,
+            recordHeadersAndBody: true
+          }}
+        />
+      )}
       <html lang="en">
         <body className={inter.className}>
             <main className="flex-grow bg-gradient-to-b from-[#0B1120] to-[#0B1120]/90">

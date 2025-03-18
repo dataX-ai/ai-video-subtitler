@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import VideoUpload from "./components/VideoUpload";
 import { FaPlay, FaUpload, FaSpinner } from "react-icons/fa";
 import { TranscriptionSegment } from "./components/VideoUpload";
+import { H } from '@highlight-run/next/client';
+import {v4 as uuidv4} from 'uuid';
 
 // Sample videos from public folder
 const sampleVideos = [
@@ -101,8 +103,6 @@ export default function Home() {
   const handleSampleVideoSelect = async (videoSrc: string, index: number) => {
     if (isHandlingVideoSelection) return;
     setIsHandlingVideoSelection(true);
-    
-    console.log("Selected sample video:", videoSrc);
 
     try {
       // Show loading state
@@ -161,7 +161,6 @@ export default function Home() {
   };
 
   const handleVideoLoad = (index: number) => {
-    console.log(`Video ${index} loaded`);
     setVideoLoading((prev) => ({ ...prev, [index]: false }));
   };
 
@@ -177,6 +176,35 @@ export default function Home() {
       videoElement.style.display = "none";
     }
   };
+
+  function getUserIdFromCookie() {
+    const cookies = document.cookie.split(';');
+    const userIdCookie = cookies.find(cookie => cookie.trim().startsWith('userId='));
+    
+    if (userIdCookie) {
+      return userIdCookie.split('=')[1];
+    }
+    
+    const userId = uuidv4();
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+    
+    document.cookie = `userId=${userId}; expires=${expiryDate.toUTCString()}; path=/`;
+    return userId;
+  }
+
+  function generateBrowserFingerprint() {
+    const fingerprint = {
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+      screenResolution: `${screen.width}x${screen.height}`,
+      colorDepth: screen.colorDepth,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      platform: navigator.platform,
+    };
+    
+    return fingerprint;
+  }
 
   // Update the useEffect to check if sample videos exist
   useEffect(() => {
@@ -237,6 +265,8 @@ export default function Home() {
       });
     };
 
+    H.identify( getUserIdFromCookie(), generateBrowserFingerprint());
+    
     // Initialize videos after a short delay to ensure DOM is ready
     const timeoutId = setTimeout(initializeVideos, 100);
 

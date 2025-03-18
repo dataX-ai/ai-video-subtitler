@@ -5,11 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Slider } from "@/components/ui/slider"
 import {
   faUpload,
-  faSpinner,
   faCheck,
-  faPalette,
-  faFont,
-  faGripLines,
   faTextHeight,
   faVideo,
   faTrash,
@@ -17,7 +13,6 @@ import {
   faSliders,
   faFileAlt,
   faMicrophone,
-  faDownload,
   faPlay,
   faPause,
   faVolumeUp,
@@ -25,9 +20,8 @@ import {
   faRedo,
 } from "@fortawesome/free-solid-svg-icons";
 import React from "react";
-import { ChromePicker, ColorResult } from "react-color";
 import SubtitleCustomizer from "./SubtitleCustomizer";
-import { SubtitleStyle, preprocessSegments, MAX_SEGMENT_LENGTH } from "../utils/subtitle-utils";
+import { SubtitleStyle, preprocessSegments } from "../utils/subtitle-utils";
 import SubtitleRenderer from "./SubtitleRenderer";
 
 interface VideoUploadProps {

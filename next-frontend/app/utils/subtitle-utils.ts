@@ -259,7 +259,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
   
   const endTime = performance.now();
   const elapsedTime = endTime - startTime;
-  console.log(`generateAssContent execution time: ${elapsedTime.toFixed(2)}ms`);
   
   return assContent;
 }

@@ -44,8 +44,6 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
         const videoWidth = video?.videoWidth || 640;
         const videoHeight = video?.videoHeight || 360;
         
-        console.log(`Generating ASS for video dimensions: ${JSON.stringify({font, fontSize, position, colors})}`);
-        
         // Recreate subtitleStyle object from individual props
         const subtitleStyle: SubtitleStyle = {
           font,
@@ -61,12 +59,10 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
           videoWidth,
           videoHeight
         );
-        console.log("ASS subtitle content generated successfully", assContent);
         if (octopusRef.current) {
           octopusRef.current.setTrack(content);
         }
         else {setAssContent(content);}
-        console.log("Subtitles set successfully");
 
       } catch (err) {
         console.error("Error generating ASS subtitle content:", err);
@@ -80,7 +76,6 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
   // Initialize or update SubtitlesOctopus when ASS content changes
   useEffect(() => {
     if (!videoRef.current) return;
-    console.log(`Debug videoRef`);
     // Function to initialize SubtitlesOctopus
     const initializeOctopus = async () => {
       // Clean up existing instance if it exists
@@ -94,7 +89,6 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
       }
       
       try {
-        console.log("Initializing SubtitlesOctopus with direct content");
 
         const videoObj = videoRef.current;
         const videoWidth = videoObj?.videoWidth || 640;
@@ -131,7 +125,6 @@ const SubtitleRenderer: React.FC<SubtitleRendererProps> = ({
           },
           fallbackFont: 'default.woff2',
           onReady: () => {
-            console.log("SubtitlesOctopus initialized successfully");
             setIsInitialized(true);
           },
           onError: (err: any) => {
