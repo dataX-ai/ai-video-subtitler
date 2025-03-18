@@ -49,6 +49,7 @@ jobs:
           file: ./next-frontend/Dockerfile
           build-args: |
             AI_BACKEND_URL=localhost:5007
+            ENV=production
           push: true
           tags: |
             ateulerlabs/ai-subtitler-frontend:latest
