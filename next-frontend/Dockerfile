@@ -1,6 +1,13 @@
 # Build stage
 FROM node:20-alpine
 
+
+ARG ENV=production
+ARG NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID
+
+ENV ENV=$ENV
+ENV NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID=$NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID
+
 # Install ffmpeg, fonts, and create database directory
 RUN apk add --no-cache ffmpeg fontconfig font-liberation ttf-liberation font-noto font-noto-extra && \
     fc-cache -f -v && \
