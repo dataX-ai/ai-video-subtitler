@@ -7,8 +7,7 @@ import { H } from '@/lib/highlight';
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import { collectMetrics } from "../../utils/decorators"
-
+import withMetrics from "@/hooks/use-metrics";
 const execAsync = promisify(exec)
 const writeFileAsync = promisify(fs.writeFile)
 
@@ -30,7 +29,6 @@ async function burnSubtitles(
   // Path for subtitle file and output video
   const subtitlePath = path.join(tmpDir, `${uniqueId}.ass`)
   const outputVideoPath = path.join(tmpDir, `${uniqueId}_subtitled.mp4`)
-  console.log(outputVideoPath)
   // Get video dimensions using ffprobe first
   const { stdout: probeOutput } = await execAsync(
     `ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${videoPath.replace(/\\/g, '/')}"`
@@ -50,14 +48,10 @@ async function burnSubtitles(
     width,
     height
   )
-  console.log("assContent", assContent)
   // Write subtitle file
   await writeFileAsync(subtitlePath, assContent)
-  console.log("subtitlePath", subtitlePath)
-  console.log("videoPath", tmpDir)
   
   const ffmpeg_command = `ffmpeg -y -i "${videoPath.replace(/\\/g, '/')}" -vf "ass='${subtitlePath.replace(/\\/g, '/').replace(/:/g, '\\:')}'" -c:v libx264 -preset fast -crf 18 -threads 0 -c:a copy "${outputVideoPath.replace(/\\/g, '/')}"`
-  console.log("ffmpeg_command", ffmpeg_command)
   await execAsync(
     ffmpeg_command
   )
@@ -86,14 +80,12 @@ async function burnSubtitles(
   } catch (e) {
     console.error("Error cleaning up temp files:", e)
   }
-  console.log("outputUrl", outputUrl)
   return outputUrl
 }
 
 class SubtitleRouteHandler {
-  @collectMetrics()
+
   static async POST(req: NextRequest) {
-    console.log("Headers:", Object.fromEntries(req.headers))
     
     try {
       const parsed = H.parseHeaders(req.headers);
@@ -115,7 +107,6 @@ class SubtitleRouteHandler {
 
       const uploadPromise = uploadToGCS(video, "video", uniqueId)
       uploadPromise.catch(err => console.error("Background upload of original video failed:", err))
-      console.log("Original Video - Uploaded Job started: ", uniqueId)
       
       // Save the video to a temporary file
       const tmpDir = path.join(os.tmpdir(), uniqueId)
@@ -146,6 +137,6 @@ class SubtitleRouteHandler {
   }
 }
 
-export const POST = SubtitleRouteHandler.POST;
+export const POST = withMetrics(SubtitleRouteHandler.POST);
 
 

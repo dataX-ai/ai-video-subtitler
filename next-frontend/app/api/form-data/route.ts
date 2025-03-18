@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import Airtable from 'airtable';
+import withMetrics from '@/hooks/use-metrics';
 
 
 type FormType = 'contact' | 'feedback' | 'feature';
@@ -12,8 +13,9 @@ const tableNames: Record<FormType, string> = {
 
 let airtable: Airtable.Base | null = null;
 
-export async function POST(request: Request) {
-  try {
+class FormDataRouteHandler {
+  static async POST(request: Request) {
+    try {
 
     // Validate environment variables
     const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
@@ -105,5 +107,8 @@ export async function POST(request: Request) {
       { error: 'Failed to process form submission' },
       { status: 500 }
     );
+    }
   }
 }
+
+export const POST = withMetrics(FormDataRouteHandler.POST);

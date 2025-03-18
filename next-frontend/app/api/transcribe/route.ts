@@ -8,15 +8,13 @@ import { writeFile, readFile, unlink } from 'fs/promises'
 import { uploadToGCS } from "../../utils/storage"
 import fs from "fs";
 import { v4 as uuidv4 } from 'uuid';
-import { H } from '@/lib/highlight'; // Adjust path based on your structure
-import { collectMetrics } from "../../utils/decorators"
-
+import { H } from '@/lib/highlight';
+import withMetrics from "@/hooks/use-metrics";
 let transcriptionClient: OpenAI | AzureOpenAI;
 
 class TranscribeRouteHandler {
-  @collectMetrics()
   static async POST(req: NextRequest) {
-    console.log('Processing GET request', { url: req.url });
+    
     const endpoint = process.env.AZURE_OPENAI_ENDPOINT || "Your endpoint";
     const apiKey = process.env.AZURE_OPENAI_API_KEY || "Your API key";
     const apiVersion = process.env.OPENAI_API_VERSION || "2024-08-01-preview";
@@ -104,4 +102,4 @@ class TranscribeRouteHandler {
   }
 }
 
-export const POST = TranscribeRouteHandler.POST;
+export const POST = withMetrics(TranscribeRouteHandler.POST);

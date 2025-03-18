@@ -61,8 +61,7 @@ export default function RootLayout({
           tracingOrigins
           networkRecording={{
             enabled: true,
-            recordHeadersAndBody: true,
-            urlBlocklist: [],
+            recordHeadersAndBody: true
           }}
         />
       )}

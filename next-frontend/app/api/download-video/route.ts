@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { H } from '@/lib/highlight'; // Adjust path based on your structure
+import withMetrics from "@/hooks/use-metrics";
 
 
-export async function POST(req: NextRequest) {
-  try {
-    const { videoUrl } = await req.json();
+class DownloadVideoRouteHandler {
+  static async POST(req: NextRequest) {
+    try {
+      const { videoUrl } = await req.json();
 
     const response = await fetch(videoUrl, {
       method: 'GET',
@@ -24,6 +25,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error downloading video:', error);
-    return NextResponse.json({ error: 'Failed to download video' }, { status: 500 });
-  }
+      return NextResponse.json({ error: 'Failed to download video' }, { status: 500 });
+    }
+  } 
 } 
+
+export const POST = withMetrics(DownloadVideoRouteHandler.POST);
