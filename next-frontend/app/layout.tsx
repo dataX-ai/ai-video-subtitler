@@ -51,8 +51,7 @@ export default function RootLayout({
 }>) {
   const isProd = process.env.ENV === 'production';
   const highlightProjectId = process.env.NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID;
-  console.log(`highlightProjectId: ${highlightProjectId}`);
-  console.log(`isProd: ${isProd}`);
+
   return (
     <>
       <HighlightInit
