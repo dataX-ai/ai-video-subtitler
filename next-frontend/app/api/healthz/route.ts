@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import withMetrics from '@/hooks/use-metrics'
+import withAPIMetrics from '@/hooks/use-metrics'
 
 const SECRET_DEV_KEY = process.env.SECRET_DEV_KEY
 
@@ -12,6 +12,7 @@ class HealthzRouteHandler {
         // Temp bypass for integration with Uptime Monitor
         return new NextResponse('OK', { status: 200 })
         
+        // TODO:  Enable this with Uptime Monitor Pro  or Switch Monitoring Service
         if (!SECRET_DEV_KEY) {
             return new NextResponse(null, { status: 404 })
         }
@@ -24,4 +25,4 @@ class HealthzRouteHandler {
         }
 }
 
-export const HEAD = withMetrics(HealthzRouteHandler.HEAD);
+export const HEAD = withAPIMetrics(HealthzRouteHandler.HEAD);

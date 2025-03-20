@@ -29,7 +29,6 @@ COPY public/js/libass/COPYRIGHT node_modules/libass-wasm/dist/js/
 
 COPY . .
 
-# Set permissions for the database directory
 RUN chown -R node:node /app/database && \
     mkdir -p /app/credentials
 

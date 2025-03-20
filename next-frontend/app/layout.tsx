@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { HighlightInit } from "@highlight-run/next/client";
+import AppInsightsProvider from './components/AppInsightsProvider';
 import Footer from "./components/Footer";
 import { Inter } from "next/font/google";
 
@@ -49,27 +49,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isProd = process.env.ENV === 'production';
-  const highlightProjectId = process.env.NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID;
-
   return (
     <>
-      <HighlightInit
-        projectId={highlightProjectId}
-        serviceName="subtitle-nextjs-frontend"
-        tracingOrigins
-        networkRecording={{
-          enabled: true,
-          recordHeadersAndBody: true,
-          urlBlocklist: [],
-        }}
-      />
       <html lang="en">
         <body className={inter.className}>
+          <AppInsightsProvider>
             <main className="flex-grow bg-gradient-to-b from-[#0B1120] to-[#0B1120]/90">
               {children}
             </main>
             <Footer />
+          </AppInsightsProvider>
         </body>
       </html>
     </>
