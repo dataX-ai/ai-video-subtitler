@@ -9,7 +9,7 @@ import { uploadToGCS } from "../../utils/storage"
 import fs from "fs";
 import { v4 as uuidv4 } from 'uuid';
 import { H } from '@/lib/highlight';
-import withMetrics from "@/hooks/use-metrics";
+import withAPIMetrics from "@/hooks/use-metrics";
 let transcriptionClient: OpenAI | AzureOpenAI;
 
 class TranscribeRouteHandler {
@@ -102,4 +102,4 @@ class TranscribeRouteHandler {
   }
 }
 
-export const POST = withMetrics(TranscribeRouteHandler.POST);
+export const POST = withAPIMetrics(TranscribeRouteHandler.POST);

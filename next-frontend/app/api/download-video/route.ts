@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import withMetrics from "@/hooks/use-metrics";
+import withAPIMetrics from "@/hooks/use-metrics";
 
 
 class DownloadVideoRouteHandler {
@@ -30,4 +30,4 @@ class DownloadVideoRouteHandler {
   } 
 } 
 
-export const POST = withMetrics(DownloadVideoRouteHandler.POST);
+export const POST = withAPIMetrics(DownloadVideoRouteHandler.POST);

@@ -7,7 +7,7 @@ import { H } from '@/lib/highlight';
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import withMetrics from "@/hooks/use-metrics";
+import withAPIMetrics from "@/hooks/use-metrics";
 const execAsync = promisify(exec)
 const writeFileAsync = promisify(fs.writeFile)
 
@@ -137,6 +137,6 @@ class SubtitleRouteHandler {
   }
 }
 
-export const POST = withMetrics(SubtitleRouteHandler.POST);
+export const POST = withAPIMetrics(SubtitleRouteHandler.POST);
 
 

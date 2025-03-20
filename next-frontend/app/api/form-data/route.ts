@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Airtable from 'airtable';
-import withMetrics from '@/hooks/use-metrics';
+import withAPIMetrics from '@/hooks/use-metrics';
 
 
 type FormType = 'contact' | 'feedback' | 'feature';
@@ -111,4 +111,4 @@ class FormDataRouteHandler {
   }
 }
 
-export const POST = withMetrics(FormDataRouteHandler.POST);
+export const POST = withAPIMetrics(FormDataRouteHandler.POST);
