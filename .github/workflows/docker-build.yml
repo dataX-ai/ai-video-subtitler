@@ -49,8 +49,8 @@ jobs:
           context: ./next-frontend
           file: ./next-frontend/Dockerfile
           build-args: |
-            ENV=production
-            NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID=${{ secrets.HIGHLIGHT_PROJECT_ID }}
+            NEXT_PUBLIC_ENV=production
+            NEXT_PUBLIC_APP_INSIGHTS_INSTRUMENTATION_KEY=${{ secrets.APP_INSIGHTS_INSTRUMENTATION_KEY }}
           push: true
           tags: |
             ateulerlabs/ai-subtitler-frontend:latest
