@@ -8,7 +8,6 @@ import { writeFile, readFile, unlink } from 'fs/promises'
 import { uploadToGCS } from "../../utils/storage"
 import fs from "fs";
 import { v4 as uuidv4 } from 'uuid';
-import { H } from '@/lib/highlight';
 import withAPIMetrics from "@/hooks/use-metrics";
 let transcriptionClient: OpenAI | AzureOpenAI;
 
@@ -35,7 +34,6 @@ class TranscribeRouteHandler {
         });
       }
     } catch (error) {
-      H.consumeError(error as Error);
       console.error("Error creating transcription client:", error)
       return NextResponse.json({ error: "Error creating transcription client" }, { status: 500 })
     }
@@ -95,7 +93,6 @@ class TranscribeRouteHandler {
 
       return NextResponse.json({ transcription: transcription.text, segments: simplifiedSegments, audioUrl: audioUrl, uniqueId: uniqueId })
     } catch (error) {
-      H.consumeError(error as Error);
       console.error("Error processing video:", error)
       return NextResponse.json({ error: "Error processing video" }, { status: 500 })
     }

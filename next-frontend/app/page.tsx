@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import VideoUpload from "./components/VideoUpload";
 import { FaPlay, FaUpload, FaSpinner } from "react-icons/fa";
 import { TranscriptionSegment } from "./components/VideoUpload";
-import { H } from '@highlight-run/next/client';
 import {v4 as uuidv4} from 'uuid';
 
 // Sample videos from public folder
@@ -264,8 +263,6 @@ export default function Home() {
         }
       });
     };
-
-    H.identify( getUserIdFromCookie(), generateBrowserFingerprint());
     
     // Initialize videos after a short delay to ensure DOM is ready
     const timeoutId = setTimeout(initializeVideos, 100);

@@ -3,7 +3,6 @@ import { exec } from "child_process"
 import { promisify } from "util"
 import { uploadToGCS } from "../../utils/storage"
 import { generateAssContent, SubtitleStyle } from "../../utils/subtitle-utils"
-import { H } from '@/lib/highlight';
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
@@ -88,7 +87,6 @@ class SubtitleRouteHandler {
   static async POST(req: NextRequest) {
     
     try {
-      const parsed = H.parseHeaders(req.headers);
   
       const formData = await req.formData()
       const video = formData.get("video") as File

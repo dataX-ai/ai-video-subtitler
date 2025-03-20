@@ -2,11 +2,9 @@
 FROM node:20-alpine
 
 
-ARG ENV=production
-ARG NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID
+ARG NEXT_PUBLIC_ENV=production
 
-ENV ENV=$ENV
-ENV NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID=$NEXT_PUBLIC_HIGHLIGHT_PROJECT_ID
+ENV ENV=$NEXT_PUBLIC_ENV
 
 # Install ffmpeg, fonts, and create database directory
 RUN apk add --no-cache ffmpeg fontconfig font-liberation ttf-liberation font-noto font-noto-extra && \
