@@ -9,3 +9,19 @@ services:
       - /home/azureuser/service-account-credentials/service-account.json:/app/credentials/service-account.json
       - /home/azureuser/database:/app/database
     restart: unless-stopped
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=3000"
+      - "prometheus.io/path=/metrics"
+
+  grafana-agent:
+    image: grafana/agent:latest
+    volumes:
+      - /home/azureuser/agent-config.yml:/etc/agent-config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: "--config.file=/etc/agent-config.yml"
+    env_file:
+      - /home/azureuser/metrics.env
+    ports:
+      - "3011:3011"
+    restart: unless-stopped
