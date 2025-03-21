@@ -60,8 +60,9 @@ async function burnSubtitles(
   const file = new File([buffer], `${uniqueId}_subtitled.mp4`, { type: 'video/mp4' })
   const outputUrl = await uploadToGCS(
     file,
-    "subtitled_video",
-    uniqueId
+    "video",
+    uniqueId,
+    `subtitled_video_${uniqueId}_file.mp4`
   )
   
   // Clean up temporary files
@@ -79,6 +80,7 @@ async function burnSubtitles(
   } catch (e) {
     console.error("Error cleaning up temp files:", e)
   }
+  console.debug(`Subtitle added to video ${uniqueId} : ${outputUrl}`)
   return outputUrl
 }
 
@@ -129,7 +131,7 @@ class SubtitleRouteHandler {
       
       return NextResponse.json({ subtitledVideoUrl })
     } catch (error) {
-      console.error("Error parsing form data:", error)
+      console.error("ERROR: add-subtitles :: Error parsing form data:", error)
       return NextResponse.json({ error: 'Invalid form data' }, { status: 400 })
     }
   }

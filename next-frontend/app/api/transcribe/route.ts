@@ -34,7 +34,7 @@ class TranscribeRouteHandler {
         });
       }
     } catch (error) {
-      console.error("Error creating transcription client:", error)
+      console.error("ERROR: transcribe :: Error creating transcription client:", error)
       return NextResponse.json({ error: "Error creating transcription client" }, { status: 500 })
     }
 
@@ -77,7 +77,7 @@ class TranscribeRouteHandler {
         model: "whisper-1",
         response_format: "verbose_json"
       })
-
+      console.debug(`Transcription result for ${uniqueId}:`, transcription)
       const simplifiedSegments = transcription.segments?.map(({ id, start, end, text }) => ({
         id,
         start,
@@ -93,7 +93,7 @@ class TranscribeRouteHandler {
 
       return NextResponse.json({ transcription: transcription.text, segments: simplifiedSegments, audioUrl: audioUrl, uniqueId: uniqueId })
     } catch (error) {
-      console.error("Error processing video:", error)
+      console.error("ERROR: transcribe :: Error processing video:", error)
       return NextResponse.json({ error: "Error processing video" }, { status: 500 })
     }
   }

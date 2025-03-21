@@ -18,7 +18,7 @@ function withAPIMetrics<T extends NextRouteHandler>(fn: T): T {
     const method = request.method;
     const path = request.nextUrl.pathname;
     
-    console.log(`Starting execution of ${method} ${path}`);
+    console.log(`DEBUG: Starting execution of ${method} ${path}`);
     
     const startTime = performance.now();
     
@@ -34,7 +34,7 @@ function withAPIMetrics<T extends NextRouteHandler>(fn: T): T {
       const statusCode = response.status.toString();
       
       // Log for debugging
-      console.log(`Execution of ${path} completed in ${executionTimeMs.toFixed(2)}ms with status ${statusCode}`);
+      console.log(`DEBUG: Execution of ${path} completed in ${executionTimeMs.toFixed(2)}ms with status ${statusCode}`);
       
       // Record metrics
       metrics.incrementHttpRequestCounter(method, path, statusCode);
@@ -46,7 +46,7 @@ function withAPIMetrics<T extends NextRouteHandler>(fn: T): T {
       const executionTimeMs = endTime - startTime;
       const executionTimeSec = executionTimeMs / 1000;
       
-      console.error(`Error in ${path} after ${executionTimeMs.toFixed(2)}ms:`, error);
+      console.error(`ERROR: Error in ${path} after ${executionTimeMs.toFixed(2)}ms:`, error);
       
       metrics.incrementHttpRequestCounter(method, path, '500');
       metrics.observeHttpRequestDuration(method, path, '500', executionTimeSec);

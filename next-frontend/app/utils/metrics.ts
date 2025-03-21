@@ -116,7 +116,6 @@ export class Metrics {
    */
   public incrementHttpRequestCounter(method: string, route: string, statusCode: string): void {
     if (!this.initialized || !this.httpRequestCounter) return;
-    console.log(`Incrementing HTTP request counter for ${method} ${route} with status code ${statusCode}`);
     this.httpRequestCounter.inc({ method, route, status_code: statusCode });
   }
 

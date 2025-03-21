@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
 
     const metricsOutput = await metrics.getMetrics();
 
-    console.log('Metrics output:', metricsOutput);
     return new NextResponse(metricsOutput, {
       status: 200,
       headers: {

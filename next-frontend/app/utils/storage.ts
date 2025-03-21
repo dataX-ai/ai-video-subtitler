@@ -3,7 +3,7 @@ import fs from "fs"
 import path from "path"
 import { tmpdir } from 'os'
 
-export async function uploadToGCS(file: Blob, type: String,uniqueId:string): Promise<string> {
+export async function uploadToGCS(file: Blob, type: String,uniqueId:string, name?: string): Promise<string> {
   // Initialize Google Cloud Storage
 
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS || !process.env.GOOGLE_CLOUD_PROJECT_ID || !process.env.GOOGLE_CLOUD_BUCKET_NAME) {
@@ -24,24 +24,24 @@ export async function uploadToGCS(file: Blob, type: String,uniqueId:string): Pro
   const buffer = Buffer.from(bytes)
   // Generate a unique filename since Blobs don't have names
   const extension = type === 'video' ? '.mp4' : '.mp3'
-  const filename = `${type}-${uniqueId}${extension}`
+  const filename = name || `${type}-${uniqueId}${extension}`
   const tempFilePath = path.join(tmpdir(), filename)
   fs.writeFileSync(tempFilePath, buffer)
-
+  console.log(`Temp file saved to ${tempFilePath}`)
   try {
     // Generate unique filename
     let fileName: string;
     if (type === 'video') {
-      fileName = `videos-${uniqueId}.mp4`;
+      fileName = name || `videos-${uniqueId}.mp4`;
     } else {
-      fileName = `audios-${uniqueId}.mp3`;
+      fileName = name || `audios-${uniqueId}.mp3`;
     }
     
     // Upload file to Google Cloud Storage
     await bucket.upload(tempFilePath, {
       destination: fileName,
       metadata: {
-        contentType: 'audio/mp3',
+        contentType: type === 'video' ? 'video/mp4' : 'audio/mp3',
       },
     })
 
