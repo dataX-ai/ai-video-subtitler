@@ -25,3 +25,16 @@ services:
     ports:
       - "3011:3011"
     restart: unless-stopped
+
+  whisper-asr:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    ports:
+      - "9000:9010"
+    environment:
+      - ASR_MODEL=medium
+      - ASR_ENGINE=openai_whisper
+      - ASR_MODEL_PATH=/app/models
+    volumes:
+      - /home/azureuser/models/model_file:/app/models
+      - /home/azureuser/models/.cache:/root/.cache/
+    restart: unless-stopped
