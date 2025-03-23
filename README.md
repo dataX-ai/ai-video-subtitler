@@ -41,33 +41,6 @@ The frontend is built with:
 
 The frontend will be available at `http://localhost:3000`
 
-## Backend (Python)
-
-The backend service is located in the `python-backend` directory and handles subtitle processing and management.
-
-### Getting Started with Backend
-
-1. Navigate to the backend directory:
-   ```bash
-   cd python-backend
-   ```
-
-2. Set up a Python virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Run the backend service:
-   ```bash
-   python -m subtitle_service
-   ```
-
 ## Features
 
 - Video subtitle processing and management
