@@ -29,7 +29,7 @@ services:
   whisper-asr:
     image: onerahmet/openai-whisper-asr-webservice:latest
     ports:
-      - "9000:9010"
+      - "9000:9000"
     environment:
       - ASR_MODEL=medium
       - ASR_ENGINE=openai_whisper

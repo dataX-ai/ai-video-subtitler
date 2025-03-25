@@ -113,8 +113,6 @@ const VideoUpload = ({
   useEffect(() => {
     if (initialVideoSrc && isPreselectedVideo) {
       setVideoSrc(initialVideoSrc);
-      // If it's a pre-selected video, we can skip the upload step
-      // and directly move to processing
     }
   }, [initialVideoSrc, isPreselectedVideo]);
 

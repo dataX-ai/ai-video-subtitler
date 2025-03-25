@@ -1,13 +1,13 @@
 import { TranscriptionSegment } from "../components/VideoUpload";
 
-export const MAX_SEGMENT_LENGTH = 3; // maximum length in seconds
-export const MIN_SEGMENT_LENGTH = 1; // minimum length in seconds
-
+export const MAX_SEGMENT_LENGTH = 2.5; // maximum length in seconds
+export const MIN_SEGMENT_LENGTH = 0.5; // minimum length in seconds
+export const MAX_SEGMENT_WORD_LENGTH = 6; // maximum length in words
 
 // utils/measureText.js
 
 
-export function measureText(text, fontSize, fontName) {
+export function measureText(text: string, fontSize: number, fontName: string): number {
   // Character width approximations (relative to fontSize)
   const charWidthMap = {
     // Narrow characters
@@ -52,12 +52,12 @@ export function measureText(text, fontSize, fontName) {
   };
 
   let totalWidth = 0;
-  const fontFactor = fontScaling[fontName] || 1.0; // Default scaling if font not found
+  const fontFactor = fontScaling[fontName as keyof typeof fontScaling] || 1.0;
 
   // Calculate width based on each character
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
-    const charWidth = charWidthMap[char] || 0.6; // Default width for unknown characters
+    const charWidth = charWidthMap[char as keyof typeof charWidthMap] || 0.6;
     totalWidth += charWidth;
   }
 
@@ -70,16 +70,17 @@ export function measureText(text, fontSize, fontName) {
  * and no new segment is shorter than MIN_SEGMENT_LENGTH seconds
  * Splits longer segments while preserving word boundaries
  */
-export function preprocessSegments(segments: TranscriptionSegment[]): TranscriptionSegment[] {
+export function preprocessSegments(segments: TranscriptionSegment[] ): TranscriptionSegment[] {
+  console.log(`unprocessed segments:${JSON.stringify(segments)}`)
   const processedSegments: TranscriptionSegment[] = [];
-  let nextId = Math.max(...segments.map(s => s.id), 0) + 1;
+  let nextId = 0;
 
   segments.forEach(segment => {
     const duration = segment.end - segment.start;
     
-    // If segment is within limits or contains only one word, keep it as is
-    // Also keep segments that are already shorter than MIN_SEGMENT_LENGTH
-    if (duration <= MAX_SEGMENT_LENGTH || !segment.text.includes(' ') || duration < MIN_SEGMENT_LENGTH) {
+    if ((duration <= MAX_SEGMENT_LENGTH && (segment.text.split(" ").length <= MAX_SEGMENT_WORD_LENGTH ) || !segment.text.includes(' ') || duration <= MIN_SEGMENT_LENGTH )) {
+      segment.id = nextId;
+      nextId+=1;
       processedSegments.push(segment);
       return;
     }
@@ -89,7 +90,7 @@ export function preprocessSegments(segments: TranscriptionSegment[]): Transcript
     processedSegments.push(...splitSegments);
     nextId += splitSegments.length;
   });
-
+  console.log(`processed segments:${JSON.stringify(processedSegments)}`)
   return processedSegments;
 }
 
@@ -99,9 +100,10 @@ export function preprocessSegments(segments: TranscriptionSegment[]): Transcript
  */
 function splitSegmentRecursively(segment: TranscriptionSegment, nextId: number): TranscriptionSegment[] {
   const duration = segment.end - segment.start;
-  
-  if (duration <= MAX_SEGMENT_LENGTH || !segment.text.includes(' ')) {
-    return [segment];
+  segment.id = nextId;
+
+  if ((duration <= MAX_SEGMENT_LENGTH && (segment.text.split(" ").length <= MAX_SEGMENT_WORD_LENGTH ) || !segment.text.includes(' ') || duration <= MIN_SEGMENT_LENGTH )) {
+    return [segment]
   }
 
   // Find the middle time point
@@ -115,7 +117,7 @@ function splitSegmentRecursively(segment: TranscriptionSegment, nextId: number):
   const secondSegmentDuration = segment.end - midTime;
 
   // If either potential segment would be too short, don't split
-  if (firstSegmentDuration < MIN_SEGMENT_LENGTH || secondSegmentDuration < MIN_SEGMENT_LENGTH) {
+  if (firstSegmentDuration < MIN_SEGMENT_LENGTH && secondSegmentDuration < MIN_SEGMENT_LENGTH) {
     return [segment];
   }
   
@@ -150,10 +152,12 @@ function splitSegmentRecursively(segment: TranscriptionSegment, nextId: number):
     text: segment.text.slice(splitIndex).trim()
   };
 
+  let firstSegments = splitSegmentRecursively(segment1, nextId);
+  let secondSegments = splitSegmentRecursively(segment2, nextId + firstSegments.length);
   // Recursively split each new segment if needed
   return [
-    ...splitSegmentRecursively(segment1, nextId),
-    ...splitSegmentRecursively(segment2, nextId + 1)
+    ...firstSegments,
+    ...secondSegments
   ];
 }
 
@@ -247,13 +251,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     const boxWidth = Math.round(Math.min(cleanText.length * style.fontSize * 0.8)/ 2);  // Half width since position is center
     const boxPosX = videoWidth/2 + boxWidth/2;
     const boxPosY = yPositionInPixels + boxHeight/2;
- // Rounded corner radius
-    
-    // Layer 0: Draw the centered rounded box
-    // Using \an5 (center alignment) to ensure box is centered properly
-    //  assContent += `Dialogue: 0,${startTime},${endTime},Default,,0,0,0,,{\\an5\\pos(${boxPosX},${boxPosY})\\p1\\bord0\\shad0\\c&H${backgroundColor}&\\3c&H${backgroundColor}&}m ${-boxWidth/2} ${-boxHeight/2 + cornerRadius} b ${-boxWidth/2} ${-boxHeight/2} ${-boxWidth/2 + cornerRadius} ${-boxHeight/2} ${-boxWidth/2 + cornerRadius} ${-boxHeight/2} l ${boxWidth/2 - cornerRadius} ${-boxHeight/2} b ${boxWidth/2} ${-boxHeight/2} ${boxWidth/2} ${-boxHeight/2 + cornerRadius} ${boxWidth/2} ${-boxHeight/2 + cornerRadius} l ${boxWidth/2} ${boxHeight/2 - cornerRadius} b ${boxWidth/2} ${boxHeight/2} ${boxWidth/2 - cornerRadius} ${boxHeight/2} ${boxWidth/2 - cornerRadius} ${boxHeight/2} l ${-boxWidth/2 + cornerRadius} ${boxHeight/2} b ${-boxWidth/2} ${boxHeight/2} ${-boxWidth/2} ${boxHeight/2 - cornerRadius} ${-boxWidth/2} ${boxHeight/2 - cornerRadius} l ${-boxWidth/2} ${-boxHeight/2 + cornerRadius}{\\p0}\n`;
-    
-    // Layer 1: The actual text using the same centering
     
   };
   
@@ -263,73 +260,137 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
   return assContent;
 }
 
-// Helper function to estimate max characters per line based on font metrics
-function calculateMaxCharsPerLine(font: string, fontSize: number, videoWidth: number): number {
-  // Average character width multiplier based on font family
-  const fontWidthMultipliers: { [key: string]: number } = {
-    'NotoSans': 0.7,  // Slightly more compact than Arial
-    'Arial': 0.7,     // Standard reference point
-    'Roboto': 0.7,    // More space-efficient design
-  };
-
-  // Default multiplier if font not found (using Arial's multiplier as default)
-  const defaultMultiplier = 0.70;
-  
-  // Get the multiplier for the current font, or use default
-  const multiplier = fontWidthMultipliers[font] || defaultMultiplier;
-  
-  // Calculate approximate pixels per character
-  const pixelsPerChar = fontSize * multiplier;
-  
-  // Use 80% of video width to leave margins
-  const usableWidth = videoWidth * 0.8;
-  
-  // Calculate max chars that can fit in the usable width
-  const maxChars = Math.floor(usableWidth / pixelsPerChar);
-  
-  // Ensure reasonable bounds (between 20 and 80 characters)
-  return Math.min(Math.max(maxChars, 20), 80);
-}
-
 function splitIntoLines(text: string, font: string, fontSize: number, videoWidth: number): string[] {
-  const maxCharsPerLine = calculateMaxCharsPerLine(font, fontSize, videoWidth);
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let currentLine = '';
-  const maxLines = 2;
+  const maxLines = 4;
+  const maxLineWidth = videoWidth * 0.8;
   
-  // Process words until we've filled our maximum number of lines
-  for (let i = 0; i < words.length; i++) {
-    const word = words[i];
+  // Check if the entire text fits on one line
+  if (measureText(text, fontSize, font) <= maxLineWidth) {
+    return [text];
+  }
+  
+  // Try splitting into increasing number of lines, until each line fits
+  for (let numSplits = 2; numSplits <= maxLines; numSplits++) {
+    const candidateLines = trySplitIntoNLines(text, numSplits, font, fontSize, maxLineWidth);
     
-    // If we can add this word to current line without exceeding max chars
-    if ((currentLine + ' ' + word).length <= maxCharsPerLine || currentLine === '') {
-      currentLine = currentLine ? `${currentLine} ${word}` : word;
-    } else {
-      // We need to start a new line
-      lines.push(currentLine);
-      
-      // If we've already used our max lines, combine all remaining words on this line
-      if (lines.length >= maxLines - 1) {
-        const remainingWords = words.slice(i);
-        currentLine = remainingWords.join(' ');
-        
-        // If the combined remaining text is too long, truncate with ellipsis
-        if (currentLine.length > maxCharsPerLine * 1.5) {
-          currentLine = currentLine.substring(0, maxCharsPerLine * 1.5 - 3) + '...';
-        }
-        
-        break; // Exit the loop as we've used all available lines
-      } else {
-        // Start a new line with the current word
-        currentLine = word;
-      }
+    // Check if all lines fit within the width constraint
+    const allLinesFit = candidateLines.every(line => 
+      measureText(line, fontSize, font) <= maxLineWidth
+    );
+    
+    if (allLinesFit) {
+      return candidateLines;
     }
   }
   
-  // Add the final line if not empty
-  if (currentLine) {
-    lines.push(currentLine);
+  // If we couldn't find a perfect split with all lines fitting,
+  // use the maximum number of lines and do the best we can
+  return forceSplitIntoNLines(text, maxLines, font, fontSize, maxLineWidth);
+}
+
+/**
+ * Try to split text into N roughly equal parts at word boundaries
+ */
+function trySplitIntoNLines(
+  text: string, 
+  numLines: number, 
+  font: string, 
+  fontSize: number, 
+  maxLineWidth: number
+): string[] {
+  const lines: string[] = [];
+  const textLength = text.length;
+  
+  // Calculate the ideal character count per line for even distribution
+  const idealCharsPerLine = Math.ceil(textLength / numLines);
+  
+  let currentPosition = 0;
+  
+  // Create n-1 lines, leaving the remainder for the last line
+  for (let i = 0; i < numLines - 1; i++) {
+    // Calculate the target position for this line end
+    const targetPosition = Math.min(
+      currentPosition + idealCharsPerLine,
+      textLength
+    );
+    
+    if (targetPosition >= textLength) {
+      // We've reached the end of the text
+      break;
+    }
+    
+    // Find the nearest space before or after the target position
+    let leftSpace = text.lastIndexOf(' ', targetPosition);
+    let rightSpace = text.indexOf(' ', targetPosition);
+    
+    if (leftSpace === -1 || leftSpace < currentPosition) leftSpace = currentPosition;
+    if (rightSpace === -1) rightSpace = textLength;
+    
+    // Choose the closest space to the target
+    let splitPosition;
+    if (targetPosition - leftSpace <= rightSpace - targetPosition && leftSpace > currentPosition) {
+      splitPosition = leftSpace;
+    } else if (rightSpace < textLength) {
+      splitPosition = rightSpace;
+    } else {
+      // If no suitable space found, just split at the target position
+      splitPosition = targetPosition;
+    }
+    
+    // Extract the line and add to lines array
+    const line = text.substring(currentPosition, splitPosition).trim();
+    lines.push(line);
+    
+    // Update current position for next iteration
+    currentPosition = splitPosition + (text[splitPosition] === ' ' ? 1 : 0);
+  }
+  
+  // Add the last line with remaining text
+  if (currentPosition < textLength) {
+    lines.push(text.substring(currentPosition).trim());
+  }
+  
+  return lines;
+}
+
+/**
+ * Force split text into N lines, ensuring each line fits the width constraint
+ * Used as a fallback when even distribution doesn't work
+ */
+function forceSplitIntoNLines(
+  text: string, 
+  numLines: number, 
+  font: string, 
+  fontSize: number, 
+  maxLineWidth: number
+): string[] {
+  const lines: string[] = [];
+  let remainingText = text;
+  
+  // For each line except the last
+  for (let i = 0; i < numLines - 1 && remainingText.length > 0; i++) {
+    // Find the maximum characters that can fit in one line
+    let charsFit = remainingText.length;
+    while (charsFit > 0 && measureText(remainingText.substring(0, charsFit), fontSize, font) > maxLineWidth) {
+      charsFit--;
+    }
+    
+    // If we found a good fit, find the nearest word boundary
+    if (charsFit > 0 && charsFit < remainingText.length) {
+      const lastSpace = remainingText.lastIndexOf(' ', charsFit);
+      if (lastSpace > 0) {
+        charsFit = lastSpace;
+      }
+    }
+    
+    // Add the line and update remaining text
+    lines.push(remainingText.substring(0, charsFit).trim());
+    remainingText = remainingText.substring(charsFit).trim();
+  }
+  
+  // Add the remaining text as the last line, even if it's too long
+  if (remainingText.length > 0) {
+    lines.push(remainingText);
   }
   
   return lines;
