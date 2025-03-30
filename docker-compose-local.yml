@@ -8,3 +8,17 @@ services:
     volumes:
       - /Users/kanishka/Not_Work/Projects/AI-Subtitles/ai-video-subtitler/next-frontend/service-account.json:/app/credentials/service-account.json
     restart: unless-stopped
+
+
+  whisper-asr:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    ports:
+      - "9000:9000"
+    environment:
+      - ASR_MODEL=medium
+      - ASR_ENGINE=openai_whisper
+      - ASR_MODEL_PATH=/app/models
+    volumes:
+      - /Users/kanishka/Not_Work/Projects/AI-Subtitles/docker/models/model_file:/app/models
+      - /Users/kanishka/Not_Work/Projects/AI-Subtitles/docker/models/.cache:/root/.cache/
+    restart: unless-stopped

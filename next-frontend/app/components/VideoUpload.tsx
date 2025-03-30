@@ -18,6 +18,7 @@ import {
   faVolumeUp,
   faVolumeMute,
   faRedo,
+  faDownload,
 } from "@fortawesome/free-solid-svg-icons";
 import React from "react";
 import SubtitleCustomizer from "./SubtitleCustomizer";
@@ -107,7 +108,8 @@ const VideoUpload = ({
   const [isMuted, setIsMuted] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
 
-
+  // Add new state for subtitled video URL
+  const [subtitledVideoUrl, setSubtitledVideoUrl] = useState<string | null>(null);
 
   // Modify useEffect to handle pre-selected videos
   useEffect(() => {
@@ -251,6 +253,9 @@ const VideoUpload = ({
       setIsExportingVideo(false);
 
       if (data.subtitledVideoUrl) {
+        // Store the URL for later download
+        setSubtitledVideoUrl(data.subtitledVideoUrl);
+        
         // Create a download link for the subtitled video
         const downloadVideo = () => {
           // Create a temporary anchor element
@@ -278,6 +283,19 @@ const VideoUpload = ({
       console.error("Error generating subtitles:", error);
       setIsExportingVideo(false);
     }
+  };
+
+  // Add a helper function to download the video again
+  const downloadSubtitledVideo = () => {
+    if (!subtitledVideoUrl) return;
+    
+    const downloadLink = document.createElement('a');
+    downloadLink.href = subtitledVideoUrl;
+    downloadLink.download = 'subtitled-video.mp4';
+    downloadLink.target = "_blank";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
   };
 
   const handleRemoveVideo = () => {
@@ -569,6 +587,18 @@ const VideoUpload = ({
                         <FontAwesomeIcon icon={faTrash} className="text-sm" />
                         <span>Remove Video</span>
                       </button>
+                      
+                      {/* Add download button if subtitled video URL exists */}
+                      {subtitledVideoUrl && (
+                        <button
+                          onClick={downloadSubtitledVideo}
+                          className="flex items-center justify-center gap-2 px-5 py-3 bg-[#182521] hover:bg-[#223A33] text-green-400 rounded-xl transition-all duration-300 font-medium border border-green-500/20 shadow-lg shadow-green-500/5"
+                        >
+                          <FontAwesomeIcon icon={faDownload} className="text-sm" />
+                          <span>Download Video</span>
+                        </button>
+                      )}
+                      
                       <label className="flex items-center justify-center gap-2 px-5 py-3 bg-[#1A1E2E] hover:bg-[#232838] text-blue-400 rounded-xl transition-all duration-300 cursor-pointer font-medium border border-blue-500/20 shadow-lg shadow-blue-500/5">
                         <FontAwesomeIcon
                           icon={faExchangeAlt}
