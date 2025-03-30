@@ -310,31 +310,6 @@ export default function Home() {
               Add professional subtitles to your videos with AI-powered
               transcription
             </p>
-            <br />
-            <p className="text-l text-gray-100">
-              Support Us:
-            </p>
-            <div className="mt-4 flex justify-center items-center gap-6">
-              <a href="https://www.producthunt.com/posts/ai-video-subtitler" target="_blank" rel="noopener noreferrer">
-                <img 
-                  src="https://api.producthunt.com/widgets/embed-image/v1/follow.svg?product_id=1048104&theme=light" 
-                  alt="AI Video Subtitler - Add subtitles to video effortlessly – free, open-source tool | Product Hunt" 
-                  style={{ width: '250px', height: '54px' }} 
-                  width="250" 
-                  height="54" 
-                />
-              </a>
-              <a href="https://indievoice.app/projects/ai-video-subtitler" target="_blank" rel="noopener noreferrer">
-                <img 
-                  src="https://1f08bbd99d1a620c734d44a7ea6c9651.cdn.bubble.io/f1732389057276x672158288395191600/featured.png"
-                  alt="IndieVoice Embed Badge"
-                  style={{ width: '250px', height: '54px' }}
-                  width="250"
-                  height="54"
-                />
-              </a>
-            </div>
-
           </div>
 
           {/* Sample Videos Section - One Row */}
